@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -80,6 +80,68 @@ export default function App() {
     ),
     [notice, setNotice] = useState<Proposal | null>(null),
     [previewPlace, setPreviewPlace] = useState<Place | null>(null);
+  const [customPlaces, setCustomPlaces] = useState<Place[]>(() =>
+    readLocal("lc-places", []),
+  );
+  const [searchResults, setSearchResults] = useState<Place[]>([]),
+    [searching, setSearching] = useState(false),
+    [searchError, setSearchError] = useState("");
+  const [locating, setLocating] = useState(false);
+  const locationRequest = useRef(0);
+  const places = useMemo(
+    () => [
+      ...new Map(
+        [
+          ...config.places,
+          ...customPlaces,
+          ...proposals.flatMap((p) => (p.place ? [p.place] : [])),
+          ...mine.flatMap((p) => (p.place ? [p.place] : [])),
+          ...(current?.place ? [current.place] : []),
+          ...(draft.location ? [draft.location] : []),
+        ].map((p) => [p.id, p]),
+      ).values(),
+    ],
+    [
+      config.places,
+      customPlaces,
+      proposals,
+      mine,
+      current?.place,
+      draft.location,
+    ],
+  );
+  const placesRef = useRef(places);
+  placesRef.current = places;
+  useEffect(() => {
+    setSearchResults([]);
+    setSearchError("");
+    if (panel !== "search" || query.trim().length < 3) {
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void api<{ places: Place[] }>(
+        "/search?q=" + encodeURIComponent(query),
+        undefined,
+        controller.signal,
+      )
+        .then((r) => {
+          if (!controller.signal.aborted) setSearchResults(r.places);
+        })
+        .catch((e) => {
+          if (!controller.signal.aborted) setSearchError(e.message);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setSearching(false);
+        });
+    }, 350);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, panel]);
   const mapControl = useRef<MapControl | null>(null),
     refreshing = useRef(false),
     initialLink = useRef(false),
@@ -195,7 +257,8 @@ export default function App() {
           setCurrent(p);
           setSelected(p.place_id);
           setPanel("proposal");
-          const loc = initialPlaces.find((l) => l.id === p.place_id);
+          const loc =
+            p.place || placesRef.current.find((l) => l.id === p.place_id);
           if (loc) mapControl.current?.focus(loc);
         })
         .catch(() => setError("Création introuvable. Reviens à la carte."));
@@ -323,14 +386,15 @@ export default function App() {
             setCurrent(p);
             setSelected(p.place_id);
             setPanel("proposal");
-            const loc = initialPlaces.find((l) => l.id === p.place_id);
+            const loc =
+              p.place || placesRef.current.find((l) => l.id === p.place_id);
             if (loc) mapControl.current?.focus(loc);
           })
           .catch(() => setPanel("none"));
       else {
         setPanel(saved?.panel || "none");
         setSelected(saved?.selected || null);
-        const loc = initialPlaces.find((l) => l.id === saved?.selected);
+        const loc = placesRef.current.find((l) => l.id === saved?.selected);
         if (loc) mapControl.current?.focus(loc);
       }
     };
@@ -363,12 +427,13 @@ export default function App() {
     return () => viewport?.removeEventListener("resize", resize);
   }, []);
   const place =
-    config.places.find(
+    places.find(
       (p) => p.id === (panel === "proposal" ? current?.place_id : selected),
     ) || config.places[0];
   const ranked = [...proposals].sort(
     (a, b) =>
-      b.votes - a.votes || (b.published_at || 0) - (a.published_at || 0),
+      b.votes + (b.demo_votes || 0) - (a.votes + (a.demo_votes || 0)) ||
+      (b.published_at || 0) - (a.published_at || 0),
   );
   const visible =
     filter === "mine" ? mine : filter === "top" ? ranked : proposals;
@@ -397,6 +462,8 @@ export default function App() {
     );
   }
   function close() {
+    locationRequest.current++;
+    setLocating(false);
     setPanel("none");
     setSelected(null);
     setQuery("");
@@ -407,16 +474,43 @@ export default function App() {
     else
       history.replaceState({ lc: { panel: "none", depth: 0 } }, "", BASE + "/");
   }
-  function choose(id: string) {
-    remember("place", id);
-    setSelected(id);
+  function choose(value: string | Place) {
+    locationRequest.current++;
+    setLocating(false);
+    const p =
+      typeof value === "string" ? places.find((p) => p.id === value) : value;
+    if (!p) return;
+    if (p.referenceKind === "aerial")
+      setCustomPlaces((old) => {
+        const next = [...old.filter((item) => item.id !== p.id), p].slice(-60);
+        saveLocal("lc-places", next);
+        return next;
+      });
+    (document.activeElement as HTMLElement)?.blur?.();
+    remember("place", p.id);
+    setSelected(p.id);
     setPanel("place");
+    setBuilding(false);
     setQuery("");
     setError("");
-    const p = config.places.find((p) => p.id === id);
-    if (p) mapControl.current?.focus(p);
+    mapControl.current?.focus(p);
+  }
+  async function pick(point: { lng: number; lat: number }) {
+    const sequence = ++locationRequest.current;
+    setLocating(true);
+    setError("");
+    try {
+      const p = await api<Place>(`/place?lat=${point.lat}&lng=${point.lng}`);
+      if (sequence === locationRequest.current) choose(p);
+    } catch (e) {
+      if (sequence === locationRequest.current) setError((e as Error).message);
+    } finally {
+      if (sequence === locationRequest.current) setLocating(false);
+    }
   }
   function open(p: Proposal) {
+    locationRequest.current++;
+    setLocating(false);
     remember("proposal", p.place_id, filter, false, p);
     setCurrent(p);
     setSelected(p.place_id);
@@ -425,17 +519,23 @@ export default function App() {
     setQuery("");
     setNotice(null);
     setError("");
-    const loc = config.places.find((l) => l.id === p.place_id);
+    const loc = p.place || places.find((l) => l.id === p.place_id);
     if (loc) mapControl.current?.focus(loc);
   }
   function start() {
     remember("studio", place.id);
-    setDraft({ ...draft, placeId: place.id });
+    setDraft({
+      ...draft,
+      placeId: place.id,
+      location: place.referenceKind === "aerial" ? place : undefined,
+    });
     setPanel("studio");
     setBuilding(false);
     setError("");
   }
   function add() {
+    locationRequest.current++;
+    setLocating(false);
     remember("none", null, "all", true);
     setBuilding(true);
     setPanel("none");
@@ -494,6 +594,7 @@ export default function App() {
     setDraft({
       ...draft,
       placeId: current.place_id,
+      location: current.place,
       styleId: current.style_id,
       title: "",
       instructions: current.instructions || "",
@@ -523,6 +624,8 @@ export default function App() {
     } else setInstallHelp(true);
   }
   function collection(f: Filter) {
+    locationRequest.current++;
+    setLocating(false);
     if (f === "all") {
       close();
       setFilter("all");
@@ -535,19 +638,29 @@ export default function App() {
     setPanel("collection");
   }
   function card(p: Proposal, index?: number) {
-    const loc = config.places.find((l) => l.id === p.place_id);
+    const loc = p.place || places.find((l) => l.id === p.place_id);
     return (
       <button className="creation-card" key={p.id} onClick={() => open(p)}>
         <img src={p.image || loc?.image} alt="" loading="lazy" />
         {index !== undefined && <span className="rank">{index + 1}</span>}
         <span className="creation-card-info">
           <strong>{p.title}</strong>
+          <span className="builder-name">{p.author}</span>
           <span>{loc?.name}</span>
         </span>
         {p.published_at ? (
           <span className="card-votes">
             <Heart size={14} />
-            {p.votes}
+            {(p.votes + (p.demo_votes || 0))
+              .toLocaleString("fr-FR")
+              .replace(/\u202f|\u00a0/g, " ")}
+            {!!p.is_demo && (
+              <small
+                title={`${p.demo_votes || 0} votes de démonstration · ${p.votes} votes réels`}
+              >
+                démo
+              </small>
+            )}
           </span>
         ) : (
           <span className="card-status">
@@ -569,14 +682,20 @@ export default function App() {
       className={`app-shell panel-${panel} ${building ? "building-mode" : ""}`}
     >
       <ParisMap
-        places={config.places}
+        places={places.filter(
+          (p) =>
+            !p.referenceKind ||
+            p.id === selected ||
+            mapProposals.some((c) => c.place_id === p.id),
+        )}
         proposals={mapProposals}
         selected={selected}
         building={building}
         onSelect={choose}
         onProposal={open}
-        onBlank={() => {
-          if (panel === "place") close();
+        onBlank={(point) => {
+          if (point && ["none", "place"].includes(panel)) void pick(point);
+          else if (!point && panel === "place") close();
         }}
         control={mapControl}
       />
@@ -586,9 +705,11 @@ export default function App() {
           <input
             type="search"
             aria-label="Rechercher à Paris"
-            placeholder="Rechercher à Paris"
+            placeholder="Lieu ou adresse à Paris"
             value={query}
             onFocus={() => {
+              locationRequest.current++;
+              setLocating(false);
               if (panel !== "search") remember("search");
               setPanel("search");
             }}
@@ -641,6 +762,16 @@ export default function App() {
           </button>
         </nav>
       </header>
+      {building && panel === "none" && (
+        <div className="map-crosshair" aria-hidden="true">
+          <span />
+        </div>
+      )}
+      {locating && !building && (
+        <div className="location-status" role="status">
+          <LoaderCircle className="spin" size={18} /> Localisation...
+        </div>
+      )}
       {!online && (
         <div className="network-state" role="status">
           <WifiOff size={15} />
@@ -651,11 +782,25 @@ export default function App() {
         <>
           {building ? (
             <div className="build-prompt">
-              <span>Choisir un lieu</span>
+              <button
+                className="place-center"
+                onClick={() => {
+                  const point = mapControl.current?.center();
+                  if (point) void pick(point);
+                }}
+                disabled={locating}
+              >
+                {locating ? (
+                  <LoaderCircle className="spin" size={19} />
+                ) : (
+                  <Plus size={20} />
+                )}{" "}
+                Construire ici
+              </button>
               <button
                 className="icon-button"
                 aria-label="Annuler"
-                onClick={() => setBuilding(false)}
+                onClick={close}
               >
                 <X size={20} />
               </button>
@@ -739,7 +884,7 @@ export default function App() {
       {panel === "studio" && (
         <Studio
           config={config}
-          place={config.places.find((p) => p.id === draft.placeId) || place}
+          place={places.find((p) => p.id === draft.placeId) || place}
           draft={draft}
           setDraft={setDraft}
           onBack={() => {
@@ -765,7 +910,12 @@ export default function App() {
         />
       )}
       {panel === "search" && (
-        <Sheet label="Rechercher" kind="search-sheet" onClose={close}>
+        <Sheet
+          label="Rechercher"
+          kind="search-sheet"
+          onClose={close}
+          autoFocus={false}
+        >
           <header className="sheet-header">
             <h1>Lieux</h1>
             <button
@@ -795,7 +945,7 @@ export default function App() {
                 <button
                   className="place-row"
                   key={p.id}
-                  onClick={() => choose(p.id)}
+                  onClick={() => choose(p)}
                 >
                   <img src={p.image} alt="" loading="lazy" />
                   <span>
@@ -805,19 +955,56 @@ export default function App() {
                   <ChevronRight size={18} />
                 </button>
               ))}
-            {query &&
+            {searchResults
+              .filter(
+                (p) =>
+                  !config.places.some(
+                    (c) => normalize(c.name) === normalize(p.name),
+                  ),
+              )
+              .map((p) => (
+                <button
+                  className="place-row address-row"
+                  key={p.id}
+                  onClick={() => choose(p)}
+                >
+                  <span className="address-icon">
+                    <Search size={20} />
+                  </span>
+                  <span>
+                    <strong>{p.name}</strong>
+                    <small>Paris</small>
+                  </span>
+                  <ChevronRight size={18} />
+                </button>
+              ))}
+            {searching && (
+              <div className="search-status" role="status">
+                <LoaderCircle className="spin" size={18} /> Recherche...
+              </div>
+            )}
+            {searchError && (
+              <div className="error-message" role="alert">
+                {searchError}
+                <button className="text-button" onClick={add}>
+                  Choisir sur la carte
+                </button>
+              </div>
+            )}
+            {query.length >= 3 &&
+              !searching &&
+              !searchError &&
+              !searchResults.length &&
               !config.places.some((p) =>
-                normalize(p.name + " " + p.arrondissement).includes(
-                  normalize(query),
-                ),
+                normalize(p.name).includes(normalize(query)),
               ) &&
               !proposals.some((p) =>
                 normalize(p.title + " " + p.author).includes(normalize(query)),
               ) && (
                 <div className="empty-state">
-                  <span>Aucun résultat</span>
-                  <button className="text-button" onClick={() => setQuery("")}>
-                    Effacer la recherche
+                  <span>Aucun résultat dans Paris</span>
+                  <button className="text-button" onClick={add}>
+                    Choisir sur la carte
                   </button>
                 </div>
               )}

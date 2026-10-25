@@ -1,0 +1,130 @@
+[
+  {
+    "placeId": "louvre",
+    "styleId": "classique",
+    "title": "Le Palais des GPU",
+    "instructions": "Un immense portique de pierre et bronze derrière la pyramide, une colonnade habitable sur deux niveaux dont les travées vitrées révèlent des milliers de serveurs. Les colonnes sont des tours de refroidissement ouvragées, les gaines courent dans les corniches. Préserver la pyramide et le palais exactement identifiables. Une architecture magistrale, très détaillée, photographiée sans aucun aspect rendu 3D.",
+    "demoVotes": 2847,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "notre-dame",
+    "styleId": "gothique",
+    "title": "Notre-Dame des données",
+    "instructions": "Un data center néogothique spectaculaire en pierre claire et métal sombre implanté sur le parvis sans masquer les tours : une nef basse aux arcs-boutants qui sont des conduites de refroidissement, grandes baies dévoilant les rangées de racks. Une coupe vitrée extrêmement détaillée montre trois niveaux de salles informatiques. Préserver toute la cathédrale. Matières patinées, reflet du vrai ciel, photographie crédible.",
+    "demoVotes": 2613,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "opera-garnier",
+    "styleId": "baroque",
+    "title": "Le Ballet des serveurs",
+    "instructions": "Un pavillon baroque de data center dans la place, une grande façade courbe en pierre sculptée et bronze, gigantesques grilles ornementales de ventilation, galerie de serveurs éclairée en blanc derrière les baies. Un escalier monumental conduit aux baies techniques vitrées. Composition spectaculaire mais opéra clairement visible derrière. Vis boulons raccords et joints constructifs visibles, réalisme photographique.",
+    "demoVotes": 2381,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "trocadero",
+    "styleId": "brutaliste",
+    "title": "Le Béton connecté",
+    "instructions": "Un data center sur pilotis magistral en béton brut, deux volumes en porte-à-faux au-dessus du parvis reliés par des passerelles techniques vitrées. Les étages de serveurs et les turbines de refroidissement définissent les façades. Laisser la perspective vers la tour Eiffel visible, architecture brutaliste audacieuse mais physiquement crédible. Traces de coffrage, métal, échelle humaine, ombres exactes.",
+    "demoVotes": 2246,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "pantheon",
+    "styleId": "neoclassique",
+    "title": "Le Temple du ping",
+    "instructions": "Une grande rotonde néoclassique de calcul en pierre, légèrement encaissée dans la place : colonnade circulaire, grand oculus vitré révélant trois niveaux de serveurs, lourdes ailettes de bronze et équipements de refroidissement derrière les colonnes. Le Panthéon est toujours entier et identifiable. Monumentalité et détails techniques fins. Photographie réaliste, aucun effet fantastique.",
+    "demoVotes": 2104,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "musee-orsay",
+    "styleId": "art-deco",
+    "title": "La Machine d'Orsay",
+    "instructions": "Un long data center Art déco posé sur le quai, façade en gradins de pierre et cuivre patiné, baies verticales géantes dévoilant plusieurs étages de racks, cheminées de ventilation sculpturales au rythme des piles du quai. Passerelle technique en acier au-dessus de la voie de service. Conserver la façade du musée et son horloge, la Seine et le cadrage de la référence. Architecture riche et industrielle.",
+    "demoVotes": 1988,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "sacre-coeur",
+    "styleId": "rococo",
+    "title": "Les Orgues du cloud",
+    "instructions": "Un grand pavillon rococo de calcul, en pierre claire et ferronnerie bleu nuit, sur une terrasse en contrebas de la basilique. Les motifs de coquille sont d'immenses grilles de ventilation, les verrières courbes exposent les racks et tubes de refroidissement. Sculpture très fine, serrurerie, reliefs, joints et structure réaliste. Ne pas modifier ni cacher les coupoles du Sacré-Cœur.",
+    "demoVotes": 1874,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "arc-de-triomphe",
+    "styleId": "contemporain",
+    "title": "Le Rond-point des racks",
+    "instructions": "Un data center annulaire bas et monumental autour d'une partie du rond-point, structure radiale en acier brossé et verre clair ; les alignements de baies de serveurs et la toiture technique en ailettes forment une géométrie extraordinairement précise. Garder l'Arc de Triomphe très visible, circulation des rues existantes lisible et échelle humaine. Une vraie photo documentaire d'un projet architectural radical, pas un vaisseau spatial.",
+    "demoVotes": 1729,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "bastille",
+    "styleId": "art-nouveau",
+    "title": "Le Génie du processeur",
+    "instructions": "Un data center Art nouveau de deux étages aux façades courbes en verre et fonte, marquise structurelle ramifiée, céramiques bleu cobalt, conduites de refroidissement qui suivent les courbes de la ferronnerie. Les rangées de serveurs apparaissent derrière de très grandes baies. La colonne de Juillet reste dégagée et strictement identique. Détails et patine photographiques extraordinaires.",
+    "demoVotes": 1642,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "pompidou",
+    "styleId": "contemporain",
+    "title": "Le Centre de calcul",
+    "instructions": "Une grande extension technique du Centre Pompidou : méga-structure en acier blanc, tuyauteries de refroidissement rouge et bleu, grandes salles de racks suspendues derrière des vitrages, passerelles et échangeurs industriels gigantesques. Une composition architecturale ambitieuse qui prolonge les vrais rythmes du bâtiment, façade et escalator historique parfaitement reconnaissables. Photo réaliste détaillée, jamais un rendu lisse.",
+    "demoVotes": 1536,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "grand-palais",
+    "styleId": "art-nouveau",
+    "title": "La Grande Verrière",
+    "instructions": "Un data center monumental sous une nouvelle verrière en fer et verre adjacente au Grand Palais, voutes croisées, trois niveaux de passerelles et de racks visibles, échangeurs cuivrés et acier patiné intégrés aux arcs. Toute la structure est hyper détaillée, boulons verre reflets métal, et le vrai dôme du Grand Palais reste visible. Un projet de grande échelle avec proportion crédible.",
+    "demoVotes": 1408,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "invalides",
+    "styleId": "baroque",
+    "title": "Les Invalides du réseau",
+    "instructions": "Une composition basse à deux ailes symétriques de data center sur l'esplanade. Pierre sculptée, toits de cuivre sombre, trois niveaux de salles techniques derrière des arcades vitrées, d'imposantes grilles de ventilation ressemblant à des orgues. Conserver le dôme doré des Invalides très lisible, perspective axiale et paysage réel. Architecture saisissante et matière physique photographiée.",
+    "demoVotes": 1293,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "bibliotheque-france",
+    "styleId": "brutaliste",
+    "title": "La Bibliothèque des prompts",
+    "instructions": "Un gigantesque cube de béton ajouré en porte-à-faux sur le parvis, coupe vitrée montrant une forêt de racks, puits de lumière entre grandes gaines de ventilation, passerelles en acier bleui. Échelle de bâtiment réel et logique structurelle claire, pas un petit abri. Les vraies tours de la BNF restent identifiables. Brutalisme exceptionnel, détails mécaniques et photo ultra réaliste.",
+    "demoVotes": 1176,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "palais-royal",
+    "styleId": "classique",
+    "title": "Les Colonnes du calcul",
+    "instructions": "Une galerie classique de serveurs dans une partie de la cour, portique de pierre blanche, doubles colonnes supportant une immense corniche d'ailettes de refroidissement en bronze. Les baies vitrées exposent des racks sur deux niveaux, un sol vitré montre les réseaux. Garder le palais et une part substantielle des colonnes de Buren inchangés. Photographie architecturale de grande qualité, proportions audacieuses.",
+    "demoVotes": 1084,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "concorde",
+    "styleId": "art-deco",
+    "title": "La Concorde des machines",
+    "instructions": "Un data center Art déco en gradins, une structure monumentale mais basse en calcaire et bronze noir sur une partie de la place. Une cascade de toits techniques portant des ventilateurs et ailettes finement sculptées, façade vitrée montrant les racks. Préserver l'obélisque, les façades historiques et la géométrie réelle de la place. Très grande finesse constructive, photographie réelle.",
+    "demoVotes": 963,
+    "author": "Atelier Le Corbusier"
+  },
+  {
+    "placeId": "conciergerie",
+    "styleId": "gothique",
+    "title": "La Conciergerie du cloud",
+    "instructions": "Un data center néogothique sur le quai à côté de la Conciergerie, longues halles de serveurs visibles sous arcs de pierre à claire-voie, refroidissement à échangeurs d'acier le long de la berge sans occulter la Seine. Des contreforts ajourés portent des passerelles techniques. Préserver les tours rondes et la silhouette de la Conciergerie. Un ouvrage spectaculaire, riche, détaillé et photographiquement crédible.",
+    "demoVotes": 846,
+    "author": "Atelier Le Corbusier"
+  }
+]

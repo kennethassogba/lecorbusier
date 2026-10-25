@@ -6,7 +6,8 @@ Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y ima
 
 ## Ce qui est livré
 
-- 20 lieux de Paris avec photographies réelles, coordonnées et crédits Wikimedia.
+- Placement libre dans Paris : toucher la carte, viser son centre ou chercher une adresse / un lieu. Le géocodage utilise la Géoplateforme IGN ; les points libres partent de la vraie vue aérienne BD ORTHO, avec le site sélectionné au centre.
+- 20 suggestions de lieux de Paris avec photographies réelles, coordonnées et crédits Wikimedia.
 - 10 styles architecturaux et instructions libres.
 - Brief architectural et légende par `gpt-5.4-mini`, image par `gpt-image-2.5-sunburst` à partir de la photo originale.
 - Génération persistante dans Cloudflare Workflows, reprise dans « Mes plans ».
@@ -70,3 +71,11 @@ La carte reste montée pendant le parcours. Les panneaux se réduisent depuis le
 Le partage prépare le PNG avant le geste pour conserver l'activation requise par Web Share. Sur les navigateurs sans partage natif, la feuille propose le lien, WhatsApp, X et un enregistrement explicite. Les exports gardent le crédit et la source photographique dans l'image. L'installation iOS passe par le menu de partage du navigateur. Les fonctions système dépendent de la plateforme ; aucun envoi de notification push en arrière-plan n'est promis.
 
 `npm run build` génère un service worker versionné d'après les fichiers émis. Le cache initial comprend le moteur de carte et son worker ; les API et images privées restent exclues. Dix images publiques au maximum sont conservées hors ligne (2 Mio maximum par image).
+
+## Exemples
+
+`data/examples.json` contient les briefs de 16 créations de démonstration. `node scripts/examples.mjs generate` passe par le même workflow que les joueurs et enregistre les résultats privés dans `output/examples/`. Après inspection visuelle, attribuer `is_demo=1` et `demo_votes` aux seuls exemples concernés, puis exécuter `node scripts/examples.mjs publish`. Les identifiants de requête sont conservés pour ne pas facturer deux fois le même démarrage.
+
+Les votes réels restent dans `votes`. Les scores de démonstration sont séparés dans `demo_votes` et signalés par « démo » à côté du score, sur les cartes et dans la création. Ils ne représentent pas une fréquentation réelle. Les noms des builders figurent dans le classement.
+
+La limite géographique provient du [contour officiel de Paris](https://geo.api.gouv.fr/communes/75056?fields=nom,contour&format=geojson&geometry=contour), bois de Boulogne et de Vincennes inclus. Les références aériennes utilisent [BD ORTHO](https://geoservices.ign.fr/bdortho), sous licence ouverte Etalab, et le [géocodage IGN](https://ignf.github.io/cartes.gouv.fr-documentation/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/). Une vue aérienne reste aérienne dans l'image générée : aucune fausse photographie de rue n'est substituée à l'adresse choisie.

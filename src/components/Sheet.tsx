@@ -7,11 +7,13 @@ export function Sheet({
   label,
   kind = "",
   onClose,
+  autoFocus = true,
 }: {
   children: ReactNode;
   label: string;
   kind?: string;
   onClose?: () => void;
+  autoFocus?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const start = useRef<number | null>(null);
@@ -19,8 +21,8 @@ export function Sheet({
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
     setCollapsed(false);
-    panel.current?.focus({ preventScroll: true });
-  }, [label]);
+    if (autoFocus) panel.current?.focus({ preventScroll: true });
+  }, [label, autoFocus]);
   return (
     <section
       ref={panel}

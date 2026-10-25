@@ -156,7 +156,19 @@ export function ProposalView({
               onClick={() => void action(() => onVote(p))}
             >
               <Heart size={21} fill={voted ? "currentColor" : "none"} />
-              <span>{p.votes}</span>
+              <span>
+                {(p.votes + (p.demo_votes || 0))
+                  .toLocaleString("fr-FR")
+                  .replace(/\u202f|\u00a0/g, " ")}
+                {!!p.is_demo && (
+                  <small
+                    className="demo-score"
+                    title={`${p.demo_votes || 0} votes de démonstration · ${p.votes} votes réels`}
+                  >
+                    démo
+                  </small>
+                )}
+              </span>
             </button>
           )}
           {generating ? (

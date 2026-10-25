@@ -95,6 +95,7 @@ export function Studio({
     try {
       const r = await api<{ instructions: string }>("/suggest", {
         placeId: place.id,
+        location: draft.location,
         styleId: draft.styleId,
         instructions: draft.instructions,
       });

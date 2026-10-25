@@ -55,7 +55,7 @@ export async function preparePostcard(
   wrap(p.title, y, 38, 2);
   ctx.font = "25px system-ui, sans-serif";
   ctx.fillStyle = "#555555";
-  ctx.fillText(`${p.author} · ${place.name}`, 58, c.height - 85);
+  ctx.fillText(`${p.author} · ${place.name}`, 58, c.height - 85, 964);
   ctx.font = "21px system-ui, sans-serif";
   ctx.fillText("keff.uk/lecorbusier", 58, c.height - 43);
   ctx.font = "16px system-ui, sans-serif";

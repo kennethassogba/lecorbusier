@@ -10,6 +10,7 @@ export type Place = {
   license: string;
   licenseUrl?: string;
   context: string;
+  referenceKind?: "aerial";
 };
 export type Style = { id: string; name: string; detail: string };
 export type Proposal = {
@@ -28,6 +29,9 @@ export type Proposal = {
   published_at: number | null;
   votes: number;
   owned?: boolean;
+  place?: Place;
+  is_demo?: number;
+  demo_votes?: number;
 };
 export type Config = {
   places: Place[];
@@ -35,6 +39,7 @@ export type Config = {
   generationAvailable: boolean;
 };
 export type Draft = {
+  location?: Place;
   placeId: string;
   styleId: string;
   instructions: string;

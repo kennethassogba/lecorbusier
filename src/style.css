@@ -1578,3 +1578,111 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
     visibility: hidden;
   }
 }
+
+/* Geographic controls stay attached to the map, not the page flow. */
+.city-pin.maplibregl-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.map-crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  margin: -15px;
+  z-index: 6;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #fff;
+}
+.map-crosshair:before,
+.map-crosshair:after {
+  content: "";
+  position: absolute;
+  background: var(--accent);
+}
+.map-crosshair:before {
+  width: 2px;
+  height: 44px;
+  left: 12px;
+  top: -9px;
+}
+.map-crosshair:after {
+  height: 2px;
+  width: 44px;
+  top: 12px;
+  left: -9px;
+}
+.place-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-weight: 650;
+}
+.location-status {
+  position: absolute;
+  z-index: 12;
+  bottom: calc(env(safe-area-inset-bottom) + 180px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.address-row .address-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  background: #f0f4fb;
+  color: var(--accent);
+}
+.address-row > span:not(.address-icon) {
+  min-width: 0;
+}
+.address-row strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.search-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: var(--muted);
+}
+.creation-card-info .builder-name {
+  color: #303943;
+}
+.card-votes {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 60px;
+}
+.card-votes small {
+  flex: 0 0 100%;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--muted);
+  font-weight: 400;
+}
+.demo-score {
+  display: block;
+  font-size: 10px;
+  line-height: 1.1;
+  color: var(--muted);
+  font-weight: 400;
+}

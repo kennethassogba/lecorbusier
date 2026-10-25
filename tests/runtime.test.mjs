@@ -41,10 +41,13 @@ test(
     );
     try {
       const db = await mf.getD1Database("DB");
-      const schema = await readFile(
-        new URL("../migrations/0001_initial.sql", import.meta.url),
-        "utf8",
-      );
+      const schema = (
+        await Promise.all(
+          ["0001_initial.sql", "0002_free_places_and_demo.sql"].map((name) =>
+            readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
+          ),
+        )
+      ).join("\n");
       for (const sql of schema
         .split(";")
         .map((s) => s.trim())
@@ -119,12 +122,20 @@ test(
       ).json();
       assert.ok(publicProposal.published_at);
       assert.ok(!("owner" in publicProposal));
+      await db
+        .prepare("UPDATE proposals SET is_demo=1,demo_votes=1234 WHERE id=?")
+        .bind(id)
+        .run();
       const results = await Promise.all(
         Array.from({ length: 5 }, () =>
           request("/api/proposals/" + id + "/vote", other, { voted: true }),
         ),
       );
       assert.ok(results.every((r) => r.status === 200));
+      const demo = await (await request("/api/proposals/" + id, other)).json();
+      assert.equal(demo.demo_votes, 1234);
+      assert.equal(demo.is_demo, 1);
+      assert.equal(demo.votes, 1);
       assert.equal(
         (
           await db
@@ -170,7 +181,7 @@ test(
   },
 );
 test(
-  "Generation requests are idempotent and persist the structured brief with mocked OpenAI",
+  "Free-place generation requests are idempotent and persist the location and structured brief (mocked OpenAI)",
   { skip: !built },
   async () => {
     const photo = await readFile(
@@ -202,6 +213,10 @@ test(
         outboundService: async (request) => {
           const path = new URL(request.url).pathname;
           calls.push(path);
+          if (path === "/wms-r")
+            return new Response(photo, {
+              headers: { "Content-Type": "image/jpeg" },
+            });
           if (path === "/v1/moderations")
             return Response.json({ results: [{ flagged: false }] });
           if (path === "/v1/responses")
@@ -225,6 +240,7 @@ test(
             assert.equal(form.get("model"), "image-test");
             assert.ok(form.get("image[]").size > 10000);
             assert.match(form.get("prompt"), /server racks/);
+            assert.match(form.get("prompt"), /EXACT CENTRE/);
             return Response.json({
               data: [{ b64_json: photo.toString("base64") }],
             });
@@ -235,10 +251,13 @@ test(
     );
     try {
       const db = await mf.getD1Database("DB");
-      const schema = await readFile(
-        new URL("../migrations/0001_initial.sql", import.meta.url),
-        "utf8",
-      );
+      const schema = (
+        await Promise.all(
+          ["0001_initial.sql", "0002_free_places_and_demo.sql"].map((name) =>
+            readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
+          ),
+        )
+      ).join("\n");
       for (const sql of schema
         .split(";")
         .map((s) => s.trim())
@@ -248,7 +267,13 @@ test(
         id = "019a1b00-1a00-4000-8000-123456789eee";
       const input = {
         requestId: id,
-        placeId: "gare-de-lyon",
+        placeId: "point-48.86914-2.33130",
+        location: {
+          lat: 48.869141,
+          lng: 2.331303,
+          name: "12 Rue de la Paix",
+          image: "https://evil.test",
+        },
         styleId: "haussmannien",
         author: "Test",
         title: "Pipeline test",
@@ -286,7 +311,7 @@ test(
       while (Date.now() < deadline) {
         row = await db
           .prepare(
-            "SELECT status,error,brief,caption FROM proposals WHERE id=?",
+            "SELECT status,error,brief,caption,place_json FROM proposals WHERE id=?",
           )
           .bind(id)
           .first();
@@ -296,6 +321,12 @@ test(
       assert.ok(
         ["generating", "ready"].includes(row.status),
         row.error || JSON.stringify(calls),
+      );
+      assert.equal(JSON.parse(row.place_json).lat, 48.86914);
+      assert.ok(
+        JSON.parse(row.place_json).image.startsWith(
+          "/lecorbusier/api/reference/",
+        ),
       );
       assert.equal(row.brief, "Un data center bas, la gare visible.");
       assert.equal(row.caption, "Le quai du cloud.");

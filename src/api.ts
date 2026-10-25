@@ -1,5 +1,9 @@
 export const BASE = "/lecorbusier";
-export async function api<T>(path: string, body?: unknown): Promise<T> {
+export async function api<T>(
+  path: string,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   const response = await fetch(BASE + "/api" + path, {
     ...(body !== undefined
       ? {
@@ -8,6 +12,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
           body: JSON.stringify(body),
         }
       : {}),
+    signal,
     credentials: "same-origin",
     cache: "no-store",
   });

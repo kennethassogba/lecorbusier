@@ -92,7 +92,8 @@ self.addEventListener("fetch", (event) => {
   }
   if (
     url.origin === self.location.origin &&
-    url.pathname.startsWith(BASE + "media/")
+    (url.pathname.startsWith(BASE + "media/") ||
+      url.pathname.startsWith(BASE + "api/reference/"))
   ) {
     event.respondWith(
       fetch(event.request)

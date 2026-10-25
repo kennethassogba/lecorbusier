@@ -12,7 +12,11 @@ import type { Place, Proposal } from "../types";
 import { BASE } from "../api";
 import "maplibre-gl/dist/maplibre-gl.css";
 setWorkerUrl(workerUrl);
-export type MapControl = { home: () => void; focus: (place: Place) => void };
+export type MapControl = {
+  home: () => void;
+  focus: (place: Place) => void;
+  center: () => { lng: number; lat: number };
+};
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 export function ParisMap({
   places,
@@ -30,7 +34,7 @@ export function ParisMap({
   building: boolean;
   onSelect: (id: string) => void;
   onProposal: (p: Proposal) => void;
-  onBlank: () => void;
+  onBlank: (point?: { lng: number; lat: number }) => void;
   control: RefObject<MapControl | null>;
 }) {
   const container = useRef<HTMLDivElement>(null),
@@ -126,10 +130,23 @@ export function ParisMap({
       container.current?.setAttribute("data-ready", "false"),
     );
     m.on("pitchend", () => setThreeD(m.getPitch() > 10));
-    m.on("click", () => callbacks.current.onBlank());
+    m.on("click", (e) =>
+      callbacks.current.onBlank({ lng: e.lngLat.lng, lat: e.lngLat.lat }),
+    );
+    const centre = () =>
+      m.unproject([
+        m.getContainer().clientWidth / 2,
+        m.getContainer().clientHeight / 2,
+      ]);
+    m.getCanvas().addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        callbacks.current.onBlank(centre());
+      }
+    });
     m.getCanvas().setAttribute(
       "aria-label",
-      "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer.",
+      "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer, Entrée pour choisir le point central.",
     );
     const focus = (p: Place) =>
       requestAnimationFrame(() => {
@@ -158,28 +175,23 @@ export function ParisMap({
         });
       });
     const home = () =>
-      m.fitBounds(
-        [
-          [2.283, 48.827],
-          [2.38, 48.888],
-        ],
-        {
-          padding:
-            window.innerWidth < 800
-              ? {
-                  top: Math.min(145, m.getContainer().clientHeight * 0.2),
-                  bottom: Math.min(210, m.getContainer().clientHeight * 0.25),
-                  left: 40,
-                  right: 40,
-                }
-              : { top: 80, bottom: 100, left: 470, right: 100 },
-          pitch: 0,
-          bearing: 0,
-          duration: reduced() ? 0 : 650,
-          maxZoom: 13,
-        },
-      );
-    control.current = { focus, home };
+      m.flyTo({
+        center: [2.344, 48.863],
+        zoom: window.innerWidth < 800 ? 13.1 : 13,
+        pitch: 0,
+        bearing: 0,
+        duration: reduced() ? 0 : 650,
+        padding:
+          window.innerWidth < 800
+            ? {
+                top: Math.min(120, m.getContainer().clientHeight * 0.18),
+                bottom: Math.min(170, m.getContainer().clientHeight * 0.2),
+                left: 0,
+                right: 0,
+              }
+            : { top: 80, bottom: 100, left: 420, right: 50 },
+      });
+    control.current = { focus, home, center: centre };
     m.once("load", () => {
       if (!latestSelected.current && !location.pathname.includes("/p/")) home();
     });
@@ -237,7 +249,13 @@ export function ParisMap({
       const el = cached?.el || document.createElement("button");
       el.type = "button";
       el.replaceChildren();
-      el.className = `city-pin ${items.length && !building ? "has-photo" : ""} ${active ? "selected" : ""} ${building ? "build-pin" : ""}`;
+      // Preserve MapLibre's positioning classes on every render.
+      el.classList.add("city-pin");
+      el.classList.toggle("has-photo", !!items.length && !building);
+      el.classList.toggle("selected", active);
+      el.classList.toggle("build-pin", building);
+      el.dataset.lng = String(place.lng);
+      el.dataset.lat = String(place.lat);
       el.setAttribute(
         "aria-label",
         items.length && !building
@@ -280,12 +298,15 @@ export function ParisMap({
           cached?.marker ||
           new Marker({
             element: el,
-            anchor: "bottom",
+            anchor: "center",
             pitchAlignment: "viewport",
           })
             .setLngLat([place.lng, place.lat])
             .addTo(m),
       };
+      markers.current[place.id].marker
+        .setOffset([0, items.length && !building ? -40 : 0])
+        .setLngLat([place.lng, place.lat]);
     }
     for (const [id, item] of Object.entries(markers.current))
       if (!places.some((p) => p.id === id)) {
