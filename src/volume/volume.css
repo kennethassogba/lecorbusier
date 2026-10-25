@@ -275,7 +275,7 @@
   gap: 20px;
   align-items: center;
   flex-wrap: wrap;
-  padding: 6px 0 4px;
+  padding: 6px 20px 4px;
 }
 .model-summary > span {
   display: flex;
