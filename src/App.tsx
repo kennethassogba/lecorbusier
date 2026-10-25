@@ -66,6 +66,12 @@ export default function App() {
     setDraftState(next);
     saveLocal("lc-draft", next);
   };
+  useEffect(() => {
+    document.title =
+      screen === "proposal" && current
+        ? `${current.title} · Le Corbusier`
+        : "Le Corbusier · Paris à l'ère de l'IA";
+  }, [screen, current?.title]);
   const refresh = useCallback(async () => {
     if (refreshing.current) return;
     if (!navigator.onLine) {
@@ -515,7 +521,7 @@ export default function App() {
                       {placeProposals.length > 1 ? "s" : ""}
                     </span>
                     <div>
-                      {placeProposals.slice(0, 5).map((p) => (
+                      {placeProposals.map((p) => (
                         <button
                           key={p.id}
                           onClick={() => open(p)}

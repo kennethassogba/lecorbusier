@@ -1456,3 +1456,12 @@ details p {
     font-size: 11px;
   }
 }
+
+.local-contributions > div {
+  max-width: 65%;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.local-contributions button {
+  flex-shrink: 0;
+}

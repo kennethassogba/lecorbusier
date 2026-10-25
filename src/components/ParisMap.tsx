@@ -18,7 +18,8 @@ export function ParisMap({
 }: Props) {
   const container = useRef<HTMLDivElement>(null),
     map = useRef<L.Map | null>(null),
-    layer = useRef<L.LayerGroup | null>(null);
+    layer = useRef<L.LayerGroup | null>(null),
+    lastSelected = useRef(selected);
   const callbacks = useRef({ onSelect, onProposal });
   callbacks.current = { onSelect, onProposal };
   useEffect(() => {
@@ -75,8 +76,10 @@ export function ParisMap({
     }
   }, [places, proposals, selected]);
   useEffect(() => {
+    if (lastSelected.current === selected) return;
     const place = places.find((p) => p.id === selected);
     if (place && map.current) {
+      lastSelected.current = selected;
       const point = map.current.project([place.lat, place.lng], 14);
       point.y += 90;
       map.current.setView(map.current.unproject(point, 14), 14, {
