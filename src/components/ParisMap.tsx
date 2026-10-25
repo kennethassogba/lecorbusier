@@ -135,6 +135,8 @@ export function ParisMap({
       requestAnimationFrame(() => {
         if (map.current !== m) return;
         const mobile = window.innerWidth < 800;
+        const height = m.getContainer().clientHeight;
+        const top = Math.min(120, height * 0.2);
         m.flyTo({
           center: [p.lng, p.lat],
           zoom: 16.2,
@@ -143,9 +145,9 @@ export function ParisMap({
           duration: reduced() ? 0 : 850,
           padding: mobile
             ? {
-                top: 120,
+                top,
                 bottom: Math.min(
-                  window.innerHeight * 0.72,
+                  Math.max(0, height - top - 80),
                   (document.querySelector(".map-sheet")?.getBoundingClientRect()
                     .height || 220) + 24,
                 ),
@@ -164,7 +166,12 @@ export function ParisMap({
         {
           padding:
             window.innerWidth < 800
-              ? { top: 145, bottom: 210, left: 40, right: 40 }
+              ? {
+                  top: Math.min(145, m.getContainer().clientHeight * 0.2),
+                  bottom: Math.min(210, m.getContainer().clientHeight * 0.25),
+                  left: 40,
+                  right: 40,
+                }
               : { top: 80, bottom: 100, left: 470, right: 100 },
           pitch: 0,
           bearing: 0,
@@ -176,7 +183,18 @@ export function ParisMap({
     m.once("load", () => {
       if (!latestSelected.current && !location.pathname.includes("/p/")) home();
     });
-    const observer = new ResizeObserver(() => m.resize());
+    const observer = new ResizeObserver(() => {
+      m.resize();
+      const { width, height } = m.getContainer().getBoundingClientRect();
+      const { top = 0, bottom = 0, left = 0, right = 0 } = m.getPadding();
+      if (left + right > width - 100 || top + bottom > height - 100)
+        m.setPadding({
+          left: Math.min(left, width * 0.2),
+          right: Math.min(right, width * 0.2),
+          top: Math.min(top, height * 0.2),
+          bottom: Math.min(bottom, height * 0.4),
+        });
+    });
     observer.observe(container.current);
     return () => {
       observer.disconnect();
@@ -189,7 +207,7 @@ export function ParisMap({
   }, [retry, control]);
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready) return;
+    if (!m || !ready || !m.getLayer("paris-place-labels")) return;
     m.setFilter("paris-place-labels", [
       "!",
       [
