@@ -40,6 +40,7 @@ export function ParisMap({
   places,
   proposals,
   constructions,
+  selectedProposalId,
   selected,
   building,
   onSelect,
@@ -56,6 +57,7 @@ export function ParisMap({
   places: Place[];
   proposals: Proposal[];
   constructions: Proposal[];
+  selectedProposalId?: string;
   selected: string | null;
   building: boolean;
   onSelect: (id: string) => void;
@@ -454,8 +456,12 @@ export function ParisMap({
     for (const place of places) {
       const items = proposals.filter((p) => p.place_id === place.id);
       const active = selected === place.id;
+      const hasVolume = constructions.some(
+        (p) => p.place_id === place.id && p.published_at && p.design,
+      );
       const key = JSON.stringify([
         active,
+        hasVolume,
         building,
         language,
         items.map((p) => [p.id, p.title, p.image, !!p.design]),
@@ -464,6 +470,7 @@ export function ParisMap({
       if (cached?.key === key) continue;
       const el = cached?.el || document.createElement("button");
       el.type = "button";
+      el.hidden = hasVolume && !building;
       el.replaceChildren();
       // Preserve MapLibre's positioning classes on every render.
       el.classList.add("city-pin");
@@ -533,7 +540,7 @@ export function ParisMap({
         item.marker.remove();
         delete markers.current[id];
       }
-  }, [places, proposals, selected, building, ready, language]);
+  }, [places, proposals, constructions, selected, building, ready, language]);
   return (
     <>
       <div
@@ -544,14 +551,14 @@ export function ParisMap({
       />
       {ready &&
         map.current &&
-        (design ||
-          constructions.some(
-            (p) => p.published_at && p.design && p.status === "ready",
-          )) && (
+        (design || constructions.some((p) => p.published_at && p.design)) && (
           <Suspense fallback={null}>
             <MapVolume
               map={map.current}
               constructions={constructions}
+              selectedId={selectedProposalId}
+              hideCards={building || (!!design && !selectedProposalId)}
+              onOpen={onProposal}
               onEngine={(engine) => {
                 volumeEngine.current = engine;
               }}

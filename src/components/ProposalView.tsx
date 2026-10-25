@@ -15,6 +15,7 @@ import { PhotoCredit } from "./PhotoCredit";
 import { areaOf } from "../../worker/volume.js";
 import { Modal } from "./Modal";
 import { SharePanel } from "./SharePanel";
+import { BuildingMeme } from "./BuildingMeme";
 export function ProposalView({
   proposal: p,
   place,
@@ -45,7 +46,8 @@ export function ProposalView({
     [localError, setLocalError] = useState(""),
     [sharing, setSharing] = useState(false),
     [fullscreen, setFullscreen] = useState(false);
-  const generating = ["queued", "planning", "generating"].includes(p.status);
+  const generating =
+    !p.published_at && ["queued", "planning", "generating"].includes(p.status);
   async function action(fn: () => Promise<void>) {
     setBusy(true);
     setLocalError("");
@@ -131,16 +133,10 @@ export function ProposalView({
               >
                 <RotateCcw size={20} />
               </button>
-              {generating && (
-                <span className="model-progress" role="status">
-                  <LoaderCircle size={17} className="spin" />
-                  {t("Génération de l’image...")}
-                </span>
-              )}
             </div>
-          ) : (
+          ) : generating ? null : (
             <>
-              <div className={`result-photo ${generating ? "building" : ""}`}>
+              <div className="result-photo">
                 <button
                   className="photo-open"
                   disabled={!p.image}
@@ -196,22 +192,11 @@ export function ProposalView({
                     </div>
                   </>
                 )}
-                {generating && (
-                  <div className="generation-status" role="status">
-                    <LoaderCircle className="spin" size={24} />
-                    <span>
-                      {p.status === "generating"
-                        ? t("Construction...")
-                        : p.status === "planning"
-                          ? t("Préparation...")
-                          : t("En attente...")}
-                    </span>
-                  </div>
-                )}
               </div>
             </>
           )}
-          {p.status === "failed" && (
+          {generating && <BuildingMeme key={p.id} proposalId={p.id} />}
+          {p.status === "failed" && !p.published_at && (
             <div className="error-message" role="alert">
               {t(p.error || "Création interrompue.")}
               <button className="text-button" onClick={onRemix}>
@@ -224,7 +209,7 @@ export function ProposalView({
               {t(localError || error)}
             </div>
           )}
-          {!showModel && <PhotoCredit place={place} adapted={!!p.image} />}
+          {!showModel && !generating && <PhotoCredit place={place} adapted={!!p.image} />}
         </div>
         <footer className="sheet-footer result-actions">
           {p.published_at && (
@@ -248,7 +233,7 @@ export function ProposalView({
               {t("Explorer Paris")}
               <ArrowUpRight size={18} />
             </button>
-          ) : p.status === "ready" ? (
+          ) : p.status === "ready" || p.published_at ? (
             <>
               <button
                 className="icon-button remix-button"

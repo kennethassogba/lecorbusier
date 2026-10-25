@@ -13,6 +13,7 @@ import {
   transformDesign,
 } from "../../worker/volume.js";
 import { volumeLayer } from "./layer";
+import { ConstructionCards } from "./ConstructionCards";
 import { t, useLanguage } from "../i18n";
 
 export type VolumeEngine = Pick<
@@ -24,6 +25,9 @@ export function MapVolume({
   map,
   constructions,
   onEngine,
+  selectedId,
+  hideCards,
+  onOpen,
   design,
   styleId,
   tool,
@@ -33,6 +37,9 @@ export function MapVolume({
 }: {
   map: Map;
   constructions: Proposal[];
+  selectedId?: string;
+  hideCards: boolean;
+  onOpen: (proposal: Proposal) => void;
   onEngine: (engine: VolumeEngine | null) => void;
   design?: Design;
   styleId: string;
@@ -44,7 +51,7 @@ export function MapVolume({
   const language = useLanguage();
   const footprintKey = JSON.stringify(design?.footprint);
   const cityFootprints = constructions
-    .filter((p) => p.published_at && p.status === "ready" && p.design)
+    .filter((p) => p.published_at && p.design)
     .map((p) => p.design!.footprint);
   if (design) cityFootprints.push(design.footprint);
   const cityFootprintKey = JSON.stringify(cityFootprints);
@@ -299,5 +306,14 @@ export function MapVolume({
         );
     });
   }, [map, design, tool]);
-  return null;
+  return (
+    <ConstructionCards
+      map={map}
+      engine={engine}
+      proposals={constructions}
+      selectedId={selectedId}
+      hidden={hideCards}
+      onOpen={onOpen}
+    />
+  );
 }

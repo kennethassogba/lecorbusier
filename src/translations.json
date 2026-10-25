@@ -175,7 +175,6 @@
   "Volume": "Volume",
   "Étape {n} sur 3": "Step {n} of 3",
   "Générer l’image": "Generate image",
-  "Génération de l’image...": "Generating image...",
   "Dessin du bâtiment": "Building tools",
   "Tracer": "Draw",
   "Ajuster": "Adjust",
@@ -219,5 +218,10 @@
   "Rose": "Rose",
   "Lavande": "Lavender",
   "Ardoise": "Slate",
-  "Choisis une couleur du nuancier.": "Choose a colour from the palette."
+  "Choisis une couleur du nuancier.": "Choose a colour from the palette.",
+  "Constructions sur la carte": "Builds on the map",
+  "Masquer le mème": "Hide meme",
+  "Le permis de construire": "The building permit",
+  "Moi, urbaniste": "Me, an urban planner",
+  "Le refroidissement": "The cooling system"
 }

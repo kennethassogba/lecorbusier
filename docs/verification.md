@@ -28,3 +28,16 @@ Limites : aucune mesure sur un téléphone physique. Une image générée peut e
 - `npm audit --omit=dev` : aucune vulnérabilité signalée.
 
 Référence pour la durée des sessions : [MDN, sessionStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage). Les anciens exemples qui ne possèdent pas de volume enregistré conservent leur repère photo. Pas de test sur téléphone physique, ni de nouvelle génération OpenAI facturée pour cette modification.
+
+## Volumes historiques, fiches et attente
+
+25 octobre 2026, complément.
+
+- Accueil : la fermeture est enregistrée dans localStorage. Migration de la fermeture explicite déjà enregistrée dans la session précédente. Vérification dans un nouvel onglet, sur un lien partagé et après vidage de sessionStorage.
+- 22 volumes paramétriques préparés pour les anciennes créations publiées, à partir de leurs lieux et silhouettes. Le volume existant reste intact. Il ne s'agit pas d'une reconstruction photogrammétrique des images.
+- Migration protégée : uniquement les créations publiées sans design. Test exécuté deux fois ; images, auteurs, votes, brouillons et designs existants inchangés. Une ancienne création publiée dont le dernier traitement a échoué conserve son image et son volume publics.
+- Fiches : titre, auteur et coeurs, reliés au toit projeté par le moteur 3D. Les fiches suivent la caméra et évitent leurs collisions. Ouverture de la bonne création et déplacement sur la carte vérifiés dans Chromium mobile.
+- Attente : « Building... », trois mèmes Internet, choix sans répétition immédiate et bouton pour masquer. Les images sont locales ; les sources figurent dans `public/memes/README.md`.
+- `npm test` : 25 tests réussis. `npm audit --omit=dev` : aucune vulnérabilité signalée. Compilation TypeScript et Vite réussie. Avertissement Vite préexistant sur la taille du module de carte.
+- Attente vérifiée à 320, 390, 788 et 1440 px, en français et en anglais : deux constructions choisissent des mèmes différents, masquer conserve le statut, échec et réussite retirent le mème, la préférence de mouvement réduit est respectée. Les générations sont simulées dans ce contrôle UI.
+- Fiches au clavier : focus visible et Entrée ouvre la bonne création. Texte à 200 % et largeurs de 320 à 1440 px contrôlés sans découpe verticale des fiches visibles. Axe : zéro violation sur les fiches après correction du nom accessible. CSP contournée uniquement dans le navigateur de test puis rétablie.

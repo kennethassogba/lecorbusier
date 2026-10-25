@@ -33,7 +33,7 @@ export function sharedModels() {
     update(proposals: Proposal[]) {
       const keep = new Set<string>();
       for (const p of proposals) {
-        if (!p.published_at || p.status !== "ready" || !p.design) continue;
+        if (!p.published_at || !p.design) continue;
         keep.add(p.id);
         const key = JSON.stringify([p.design, p.style_id]);
         const old = entries.get(p.id);
@@ -93,6 +93,7 @@ export function volumeLayer() {
     style = "",
     fingerprint = "",
     capturing = false,
+    rendered = false,
     timer: ReturnType<typeof setTimeout> | undefined;
   const repaint = () => {
     if (map) delete map.getContainer().dataset.volumeReady;
@@ -133,6 +134,7 @@ export function volumeLayer() {
       camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
       renderer.resetState();
       renderer.render(scene, camera);
+      rendered = true;
       map.getContainer().dataset.volumeReady = "true";
       map.getContainer().dataset.constructionCount = String(
         shared.entries.size,
@@ -163,6 +165,22 @@ export function volumeLayer() {
       capturing = value;
       shared.visibility(current, capturing);
       repaint();
+    },
+    projectRoof(id: string): { x: number; y: number } | undefined {
+      const entry = shared.entries.get(id);
+      if (!entry || !map || !rendered || capturing) return;
+      const model = entry.model;
+      const point = new THREE.Vector4(
+        model.position.x,
+        model.position.y,
+        model.userData.height * model.scale.z,
+        1,
+      ).applyMatrix4(camera.projectionMatrix);
+      if (point.w <= 0 || Math.abs(point.z / point.w) > 1) return;
+      return {
+        x: ((point.x / point.w + 1) * map.getContainer().clientWidth) / 2,
+        y: ((1 - point.y / point.w) * map.getContainer().clientHeight) / 2,
+      };
     },
     pick(point: { x: number; y: number }): string | undefined {
       if (!map || current || capturing) return;

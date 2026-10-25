@@ -161,10 +161,16 @@ test("The shared scene retains published geometry across refreshes and excludes 
     a,
     b,
     privateProposal,
-    { ...b, id: "unfinished", status: "generating" },
+    { ...b, id: "unfinished", status: "generating", published_at: null },
   ]);
   assert.equal(shared.entries.size, 2);
   const model = shared.entries.get(a.id).model;
+  shared.update([{ ...a, status: "failed" }, b]);
+  assert.equal(
+    shared.entries.get(a.id).model,
+    model,
+    "An already published image remains on the map after a later generation failure",
+  );
   let disposed = false;
   model.children
     .find((mesh) => mesh.isMesh)

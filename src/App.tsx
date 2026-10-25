@@ -85,13 +85,18 @@ export default function App() {
     past: [],
   });
   const [welcomeOpen, setWelcomeOpen] = useState(() => {
+    if (readLocal("corbs-welcome-dismissed", false)) return false;
     try {
-      return sessionStorage.getItem("corbs-welcome-session") !== "seen";
-    } catch {
-      return true;
-    }
+      // The previous release stored an explicit dismissal for this tab only.
+      if (sessionStorage.getItem("corbs-welcome-session") === "seen") {
+        saveLocal("corbs-welcome-dismissed", true);
+        return false;
+      }
+    } catch {}
+    return true;
   });
   function dismissWelcome() {
+    saveLocal("corbs-welcome-dismissed", true);
     try {
       sessionStorage.setItem("corbs-welcome-session", "seen");
     } catch {}
@@ -632,7 +637,7 @@ export default function App() {
     setLocating(false);
     remember("proposal", p.place_id, filter, false, p);
     setCurrent(p);
-    setShowModel(!!p.design && p.status !== "ready");
+    setShowModel(!!p.design && !p.published_at && p.status !== "ready");
     setSelected(p.place_id);
     setPanel("proposal");
     setBuilding(false);
@@ -823,6 +828,7 @@ export default function App() {
         )}
         proposals={mapProposals}
         constructions={proposals}
+        selectedProposalId={panel === "proposal" ? current?.id : undefined}
         selected={selected}
         building={building}
         onSelect={choose}
