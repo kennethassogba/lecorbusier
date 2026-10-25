@@ -1,0 +1,33 @@
+{
+  "id": "/lecorbusier/",
+  "name": "Le Corbusier",
+  "short_name": "Le Corbusier",
+  "description": "Transforme Paris en data centers.",
+  "lang": "fr",
+  "start_url": "/lecorbusier/",
+  "scope": "/lecorbusier/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/lecorbusier/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lecorbusier/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/lecorbusier/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

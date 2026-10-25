@@ -1,0 +1,44 @@
+{
+  "name": "lecorbusier",
+  "version": "1.0.0",
+  "description": "Paris, transformé en data centers. Un atelier collectif et satirique.",
+  "private": true,
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test tests/*.test.mjs",
+    "preview": "cf dev",
+    "deploy": "npm run build && cf deploy",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "leaflet": "1.9.4",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.4",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "axe-core": "^4.14.0",
+    "cf": "1.0.0-beta.21",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.5",
+    "miniflare": "5.20261019.2-beta"
+  },
+  "overrides": {
+    "zod": "4.6.7",
+    "undici": "7.30.1"
+  },
+  "engines": {
+    "node": ">=24.22.0"
+  }
+}
