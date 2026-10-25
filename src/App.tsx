@@ -250,7 +250,7 @@ export default function App() {
     history.replaceState(
       {
         lc: {
-          panel: "none",
+          panel,
           selected: null,
           filter: "all",
           building: false,
