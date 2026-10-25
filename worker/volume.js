@@ -1,3 +1,4 @@
+import { PALETTES, paletteFor } from "./palettes.js";
 import { inParis } from "./geo.js";
 const METRES = 111320;
 export const SITE_STARTS = {
@@ -229,9 +230,19 @@ export function validateDesign(input, place) {
   const area = areaOf(points);
   if (area < 60 || area > 40000)
     throw new Error("Choisis une surface entre 60 et 40 000 m².");
-  return { version: 1, footprint: points, height: Math.round(input.height) };
+  if (
+    input.palette !== undefined &&
+    !PALETTES.some((p) => p.id === input.palette)
+  )
+    throw new Error("Choisis une couleur du nuancier.");
+  return {
+    version: 1,
+    footprint: points,
+    height: Math.round(input.height),
+    ...(input.palette ? { palette: input.palette } : {}),
+  };
 }
 export function designSummary(design) {
   if (!design) return "";
-  return `Authoritative player design: footprint WGS84 [longitude,latitude] ${JSON.stringify(design.footprint)}; total architectural height ${design.height} metres, footprint area ${Math.round(areaOf(design.footprint))} square metres. Match this footprint, height, silhouette, roof and facade rhythm. The FIRST reference image is the exact player's 3D model in its real map location and is the camera/composition reference. The SECOND reference is a photograph used ONLY for the real landmark identity and materials, never its camera. Keep the surroundings and monument identifiable. Turn the model view into a photograph; remove map labels and drawing handles. Do not invent another volume or substitute a generic tower.`;
+  return `Authoritative player design: footprint WGS84 [longitude,latitude] ${JSON.stringify(design.footprint)}; total architectural height ${design.height} metres, footprint area ${Math.round(areaOf(design.footprint))} square metres. Match this footprint, height, silhouette, roof and facade rhythm. Preserve the facade, roof and accent colours visible in the FIRST image.${design.palette ? ` Selected material palette: ${paletteFor(design).name}, facade ${paletteFor(design).facade}, roof ${paletteFor(design).roof}.` : ""} The FIRST reference image is the exact player's 3D model in its real map location and is the camera/composition reference. The SECOND reference is a photograph used ONLY for the real landmark identity and materials, never its camera. Keep the surroundings and monument identifiable. Turn the model view into a photograph; remove map labels and drawing handles. Do not invent another volume or substitute a generic tower.`;
 }

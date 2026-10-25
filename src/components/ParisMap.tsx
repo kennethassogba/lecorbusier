@@ -17,7 +17,7 @@ import {
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { Box, Rotate3d, LocateFixed, Minus, Plus } from "lucide-react";
 import type { Place, Proposal, Design, Coordinate } from "../types";
-import type { VolumeTool } from "../volume/MapVolume";
+import type { VolumeTool, VolumeEngine } from "../volume/MapVolume";
 const MapVolume = lazy(() =>
   import("../volume/MapVolume").then((m) => ({ default: m.MapVolume })),
 );
@@ -28,6 +28,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 setWorkerUrl(workerUrl);
 export type MapControl = {
   home: () => void;
+  uncover: (design?: Design) => void;
   focus: (place: Place) => void;
   center: () => { lng: number; lat: number };
   volume: (design: Design, plan?: boolean) => void;
@@ -38,6 +39,7 @@ const reduced = reduceMotion;
 export function ParisMap({
   places,
   proposals,
+  constructions,
   selected,
   building,
   onSelect,
@@ -53,6 +55,7 @@ export function ParisMap({
 }: {
   places: Place[];
   proposals: Proposal[];
+  constructions: Proposal[];
   selected: string | null;
   building: boolean;
   onSelect: (id: string) => void;
@@ -67,6 +70,9 @@ export function ParisMap({
   onSketchPoint?: (point: Coordinate) => void;
 }) {
   const language = useLanguage();
+  const volumeEngine = useRef<VolumeEngine | null>(null);
+  const published = useRef(constructions);
+  published.current = constructions;
   const container = useRef<HTMLDivElement>(null),
     map = useRef<MapInstance | null>(null);
   const compass = useRef<HTMLSpanElement>(null);
@@ -77,8 +83,8 @@ export function ParisMap({
   currentPlace.current = places.find((p) => p.id === selected);
   const latestSelected = useRef(selected);
   latestSelected.current = selected;
-  const editor = useRef({ volumeTool, onSketchPoint });
-  editor.current = { volumeTool, onSketchPoint };
+  const editor = useRef({ volumeTool, onSketchPoint, building });
+  editor.current = { volumeTool, onSketchPoint, building };
   const currentDesign = useRef(design);
   currentDesign.current = design;
   const callbacks = useRef({ onSelect, onProposal, onBlank });
@@ -166,7 +172,16 @@ export function ParisMap({
       if (!m.isStyleLoaded() && /style|fetch|network/i.test(e.error.message))
         setFailed(true);
     });
-    m.on("idle", () => container.current?.setAttribute("data-ready", "true"));
+    const detail = () =>
+      container.current?.setAttribute(
+        "data-detail",
+        String(m.getZoom() >= 15 && m.getPitch() > 10),
+      );
+    m.on("move", detail);
+    m.on("idle", () => {
+      detail();
+      container.current?.setAttribute("data-ready", "true");
+    });
     m.on("movestart", () =>
       container.current?.setAttribute("data-ready", "false"),
     );
@@ -175,9 +190,15 @@ export function ParisMap({
       if (compass.current)
         compass.current.style.transform = `rotate(${-m.getBearing()}deg)`;
     });
-    m.on("click", (e) =>
-      callbacks.current.onBlank({ lng: e.lngLat.lng, lat: e.lngLat.lat }),
-    );
+    m.on("click", (e) => {
+      if (editor.current.volumeTool !== "orbit") return;
+      const id = editor.current.building
+        ? undefined
+        : volumeEngine.current?.pick(e.point);
+      const proposal = published.current.find((p) => p.id === id);
+      if (proposal) callbacks.current.onProposal(proposal);
+      else callbacks.current.onBlank({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+    });
     const centre = () =>
       m.unproject([
         m.getContainer().clientWidth / 2,
@@ -198,8 +219,10 @@ export function ParisMap({
         "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer, Entrée pour choisir le point central.",
       ),
     );
-    const focus = (p: Place) =>
-      requestAnimationFrame(() => {
+    let cameraPlaced = false;
+    const focus = (p: Place) => {
+      cameraPlaced = true;
+      return requestAnimationFrame(() => {
         if (map.current !== m) return;
         const mobile = window.innerWidth < 800;
         const height = m.getContainer().clientHeight;
@@ -225,6 +248,7 @@ export function ParisMap({
             : { left: 460, right: 60, top: 70, bottom: 40 },
         });
       });
+    };
     const home = () =>
       m.flyTo({
         center: [2.344, 48.863],
@@ -253,6 +277,7 @@ export function ParisMap({
       );
     };
     const volume = (d: Design, plan = false) => {
+      cameraPlaced = true;
       const mobile = innerWidth < 800;
       const height = m.getContainer().clientHeight;
       const landmark = currentPlace.current;
@@ -295,6 +320,7 @@ export function ParisMap({
       if (!m.getLayer("corbs-volume"))
         throw new Error(t("La maquette n'est pas prête. Réessaie."));
       try {
+        volumeEngine.current?.capture(true);
         return await new Promise<string>((resolve, reject) => {
           const timer = setTimeout(() => {
             m.off("render", render);
@@ -337,10 +363,25 @@ export function ParisMap({
           m.triggerRepaint();
         });
       } finally {
+        volumeEngine.current?.capture(false);
         m.jumpTo(saved);
       }
     };
     control.current = {
+      uncover: (design) => {
+        cameraPlaced = true;
+        return m.easeTo({
+          center: design ? centerOf(design.footprint) : m.getCenter(),
+          zoom: design
+            ? Math.max(m.getZoom(), Math.min(fittedZoom(design), 16.4))
+            : m.getZoom(),
+          padding:
+            innerWidth < 800
+              ? { top: 140, bottom: 170, left: 20, right: 40 }
+              : { top: 100, bottom: 170, left: 40, right: 60 },
+          duration: reduced() ? 0 : 280,
+        });
+      },
       focus,
       home,
       center: centre,
@@ -353,7 +394,12 @@ export function ParisMap({
         }),
     };
     m.once("load", () => {
-      if (!latestSelected.current && !location.pathname.includes("/p/")) home();
+      if (
+        !cameraPlaced &&
+        !latestSelected.current &&
+        !location.pathname.includes("/p/")
+      )
+        home();
     });
     const observer = new ResizeObserver(() => {
       m.resize();
@@ -412,7 +458,7 @@ export function ParisMap({
         active,
         building,
         language,
-        items.map((p) => [p.id, p.title, p.image]),
+        items.map((p) => [p.id, p.title, p.image, !!p.design]),
       ]);
       const cached = markers.current[place.id];
       if (cached?.key === key) continue;
@@ -422,6 +468,10 @@ export function ParisMap({
       // Preserve MapLibre's positioning classes on every render.
       el.classList.add("city-pin");
       el.classList.toggle("has-photo", !!items.length && !building);
+      el.classList.toggle(
+        "has-volume",
+        items.some((p) => p.design) && !building,
+      );
       el.classList.toggle("selected", active);
       el.classList.toggle("build-pin", building);
       el.dataset.lng = String(place.lng);
@@ -492,19 +542,28 @@ export function ParisMap({
         role="region"
         aria-label={t("Carte commune de Paris")}
       />
-      {ready && map.current && design && (
-        <Suspense fallback={null}>
-          <MapVolume
-            map={map.current}
-            design={design}
-            styleId={styleId}
-            tool={volumeTool}
-            sketch={sketch}
-            onChange={onDesignChange}
-            onPoint={onSketchPoint}
-          />
-        </Suspense>
-      )}
+      {ready &&
+        map.current &&
+        (design ||
+          constructions.some(
+            (p) => p.published_at && p.design && p.status === "ready",
+          )) && (
+          <Suspense fallback={null}>
+            <MapVolume
+              map={map.current}
+              constructions={constructions}
+              onEngine={(engine) => {
+                volumeEngine.current = engine;
+              }}
+              design={design}
+              styleId={styleId}
+              tool={volumeTool}
+              sketch={sketch}
+              onChange={onDesignChange}
+              onPoint={onSketchPoint}
+            />
+          </Suspense>
+        )}
       {failed && (
         <button
           className="map-retry"

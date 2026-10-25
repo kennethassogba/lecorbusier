@@ -1942,3 +1942,36 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
   border-color: var(--accent);
   background: #f3f7ff;
 }
+
+.welcome-modal {
+  padding-inline: 0;
+}
+.welcome-modal .sheet-header {
+  padding-inline: 20px;
+}
+.welcome-modal .sheet-scroll {
+  padding: 0;
+}
+.welcome-modal .sheet-footer {
+  padding: 18px 20px 0;
+}
+
+.paris-map[data-detail="true"] .city-pin.has-volume {
+  width: 44px;
+  height: 44px;
+}
+.paris-map[data-detail="true"] .city-pin.has-volume .pin-face,
+.paris-map[data-detail="true"] .city-pin.has-volume::after {
+  display: none;
+}
+.paris-map[data-detail="true"] .city-pin.has-volume .pin-label {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: #fff;
+  text-shadow: none;
+}
+.paris-map[data-detail="true"] .city-pin.has-volume.selected .pin-label {
+  color: var(--accent);
+}

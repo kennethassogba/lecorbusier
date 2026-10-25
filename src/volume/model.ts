@@ -1,20 +1,22 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { areaOf, centerOf, toLocal } from "../../worker/volume.js";
+import { paletteFor } from "../../worker/palettes.js";
 import type { Coordinate, Design } from "../types";
 
 export function buildModel(design: Design, style: string) {
+  const palette = paletteFor(design, style);
   const origin = centerOf(design.footprint);
   const points = design.footprint.map((p) => toLocal(p, origin));
   const group = new THREE.Group();
   const materials = {
     stone: new THREE.MeshStandardMaterial({
-      color: style === "brutaliste" ? 0xbfc5cd : 0xe6e9ed,
+      color: palette.facade,
       roughness: 0.83,
     }),
     trim: new THREE.MeshStandardMaterial({ color: 0xf6f8fb, roughness: 0.7 }),
     zinc: new THREE.MeshStandardMaterial({
-      color: 0x4b596b,
+      color: palette.roof,
       metalness: 0.45,
       roughness: 0.5,
     }),
@@ -32,7 +34,10 @@ export function buildModel(design: Design, style: string) {
       roughness: 0.15,
       side: THREE.DoubleSide,
     }),
-    blue: new THREE.MeshStandardMaterial({ color: 0x0860f7, roughness: 0.4 }),
+    blue: new THREE.MeshStandardMaterial({
+      color: palette.accent,
+      roughness: 0.4,
+    }),
   };
   type MaterialKey = keyof typeof materials;
   const batches: Partial<Record<MaterialKey, THREE.BufferGeometry[]>> = {};

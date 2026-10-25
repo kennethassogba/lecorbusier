@@ -84,14 +84,20 @@ export default function App() {
   const designHistory = useRef<{ past: Design[]; baseline?: Design }>({
     past: [],
   });
-  const [panel, setPanel] = useState<Panel>(() =>
-      !readLocal("lc-welcome-v1", false) &&
-      !location.pathname.includes("/p/") &&
-      !new URLSearchParams(location.search).has("build") &&
-      !new URLSearchParams(location.search).has("view")
-        ? "welcome"
-        : "none",
-    ),
+  const [welcomeOpen, setWelcomeOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem("corbs-welcome-session") !== "seen";
+    } catch {
+      return true;
+    }
+  });
+  function dismissWelcome() {
+    try {
+      sessionStorage.setItem("corbs-welcome-session", "seen");
+    } catch {}
+    setWelcomeOpen(false);
+  }
+  const [panel, setPanel] = useState<Panel>("none"),
     [filter, setFilter] = useState<Filter>("all"),
     [selected, setSelected] = useState<string | null>(null),
     [building, setBuilding] = useState(
@@ -126,9 +132,7 @@ export default function App() {
     [searching, setSearching] = useState(false),
     [searchError, setSearchError] = useState("");
   const [locating, setLocating] = useState(false);
-  useEffect(() => {
-    if (panel === "welcome") saveLocal("lc-welcome-v1", true);
-  }, [panel]);
+
   const locationRequest = useRef(0);
   const places = useMemo(
     () => [
@@ -484,6 +488,8 @@ export default function App() {
         setSelected(saved?.selected || null);
         const loc = placesRef.current.find((l) => l.id === saved?.selected);
         if (loc) mapControl.current?.focus(loc);
+        else if (!saved?.panel || saved.panel === "none")
+          mapControl.current?.uncover();
       }
     };
     window.addEventListener("popstate", back);
@@ -570,6 +576,11 @@ export default function App() {
     );
   }
   function close() {
+    mapControl.current?.uncover(
+      panel === "proposal" && current?.published_at
+        ? current.design
+        : undefined,
+    );
     locationRequest.current++;
     setLocating(false);
     setPanel("none");
@@ -811,6 +822,7 @@ export default function App() {
             mapProposals.some((c) => c.place_id === p.id),
         )}
         proposals={mapProposals}
+        constructions={proposals}
         selected={selected}
         building={building}
         onSelect={choose}
@@ -1419,6 +1431,24 @@ export default function App() {
           >
             {t("Fermer")}
           </button>
+        </Modal>
+      )}
+      {welcomeOpen && (
+        <Modal
+          title="Le Corbusier"
+          className="welcome-modal"
+          onClose={dismissWelcome}
+          trackHistory={false}
+        >
+          <Welcome
+            place={config.places.find((p) => p.id === "louvre")!}
+            showHeader={false}
+            onClose={dismissWelcome}
+            onBuild={() => {
+              dismissWelcome();
+              add();
+            }}
+          />
         </Modal>
       )}
       {shareApp && <SharePanel onClose={() => setShareApp(false)} />}

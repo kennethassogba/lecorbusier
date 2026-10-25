@@ -7,11 +7,13 @@ export function Modal({
   children,
   onClose,
   className = "",
+  trackHistory = true,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   className?: string;
+  trackHistory?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const closing = useRef(false);
@@ -48,13 +50,14 @@ export function Modal({
   useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement;
     const token = crypto.randomUUID();
-    if (history.state?.modal)
+    if (trackHistory && history.state?.modal)
       history.replaceState({ ...history.state, modal: token }, "");
-    else history.pushState({ ...history.state, modal: token }, "");
+    else if (trackHistory)
+      history.pushState({ ...history.state, modal: token }, "");
     const back = () => {
       if (history.state?.modal !== token) dismiss();
     };
-    window.addEventListener("popstate", back);
+    if (trackHistory) window.addEventListener("popstate", back);
     const el = ref.current;
     el?.showModal();
     if (el)
@@ -75,7 +78,7 @@ export function Modal({
       window.removeEventListener("popstate", back);
       ref.current?.close();
       queueMicrotask(() => {
-        if (history.state?.modal === token) history.back();
+        if (trackHistory && history.state?.modal === token) history.back();
       });
       previous?.focus({ preventScroll: true });
     };

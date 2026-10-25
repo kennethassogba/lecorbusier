@@ -5,7 +5,7 @@ import {
   type GeoJSONSource,
   type FilterSpecification,
 } from "maplibre-gl";
-import type { Coordinate, Design } from "../types";
+import type { Coordinate, Design, Proposal } from "../types";
 import {
   centerOf,
   toLocal,
@@ -15,9 +15,15 @@ import {
 import { volumeLayer } from "./layer";
 import { t, useLanguage } from "../i18n";
 
+export type VolumeEngine = Pick<
+  ReturnType<typeof volumeLayer>,
+  "pick" | "capture"
+>;
 export type VolumeTool = "orbit" | "edit" | "draw";
 export function MapVolume({
   map,
+  constructions,
+  onEngine,
   design,
   styleId,
   tool,
@@ -26,6 +32,8 @@ export function MapVolume({
   onPoint,
 }: {
   map: Map;
+  constructions: Proposal[];
+  onEngine: (engine: VolumeEngine | null) => void;
   design?: Design;
   styleId: string;
   tool: VolumeTool;
@@ -35,6 +43,11 @@ export function MapVolume({
 }) {
   const language = useLanguage();
   const footprintKey = JSON.stringify(design?.footprint);
+  const cityFootprints = constructions
+    .filter((p) => p.published_at && p.status === "ready" && p.design)
+    .map((p) => p.design!.footprint);
+  if (design) cityFootprints.push(design.footprint);
+  const cityFootprintKey = JSON.stringify(cityFootprints);
   const markers = useRef<{ marker: Marker; index: number }[]>([]);
   const dragging = useRef<Marker | null>(null);
   const originalCityFilter = useRef<FilterSpecification | undefined>(undefined);
@@ -46,6 +59,7 @@ export function MapVolume({
     originalCityFilter.current = map.getFilter("paris-buildings") || undefined;
     const volume = volumeLayer();
     engine.current = volume;
+    onEngine(volume);
     map.addLayer(volume.layer);
     map.addSource("corbs-plan", {
       type: "geojson",
@@ -74,6 +88,7 @@ export function MapVolume({
     };
     map.on("click", click);
     return () => {
+      onEngine(null);
       map.off("click", click);
       if (!map.getStyle()) return;
       if (map.getLayer("paris-buildings"))
@@ -85,6 +100,9 @@ export function MapVolume({
     };
   }, [map]);
   useEffect(() => {
+    engine.current?.setShared(constructions);
+  }, [map, constructions]);
+  useEffect(() => {
     if (!engine.current) return;
     engine.current.update(tool === "draw" ? undefined : design, styleId);
   }, [map, design, styleId, tool]);
@@ -93,10 +111,12 @@ export function MapVolume({
     // Changing the height must not reparse the city vector tiles.
     // The proposed footprint replaces intersecting context blocks instead of occupying their interiors.
     if (map.getLayer("paris-buildings")) {
-      const footprint = design
+      const footprint = cityFootprints.length
         ? {
-            type: "Polygon",
-            coordinates: [[...design.footprint, design.footprint[0]]],
+            type: "MultiPolygon",
+            coordinates: cityFootprints.map((points) => [
+              [...points, points[0]],
+            ]),
           }
         : null;
       map.setFilter(
@@ -112,7 +132,7 @@ export function MapVolume({
           : originalCityFilter.current,
       );
     }
-  }, [map, footprintKey]);
+  }, [map, cityFootprintKey]);
   useEffect(() => {
     if (!engine.current) return;
     const points = sketch || design?.footprint || [];

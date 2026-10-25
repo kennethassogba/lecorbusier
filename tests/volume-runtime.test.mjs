@@ -8,7 +8,10 @@ const places = JSON.parse(await readFile(new URL("data/places.json", root)));
 test("A private volume survives generation and publication; OpenAI receives the real photo and exact saved model reference", async () => {
   const photo = await readFile(new URL("public/places/gare-de-lyon.jpg", root));
   const modelImage = await readFile(new URL("public/places/louvre.jpg", root));
-  const design = validateDesign(defaultDesign(places[0]), places[0]);
+  const design = validateDesign(
+    { ...defaultDesign(places[0]), palette: "terracotta" },
+    places[0],
+  );
   const calls = [];
   let providerError;
   const mf = new Miniflare(
@@ -65,10 +68,18 @@ test("A private volume survives generation and publication; OpenAI receives the 
             const form = await request.formData(),
               images = form.getAll("image[]");
             assert.equal(images.length, 2);
-            assert.deepEqual(Buffer.from(await images[0].arrayBuffer()), modelImage);
+            assert.deepEqual(
+              Buffer.from(await images[0].arrayBuffer()),
+              modelImage,
+            );
             assert.deepEqual(Buffer.from(await images[1].arrayBuffer()), photo);
             assert.match(form.get("prompt"), /FIRST reference image/);
             assert.match(form.get("prompt"), /28 metres/);
+            assert.match(form.get("prompt"), /#cc806d/);
+            assert.match(
+              form.get("prompt"),
+              /without desaturating painted materials/,
+            );
             assert.ok(
               !form.get("prompt").includes("Keep the original camera position"),
             );

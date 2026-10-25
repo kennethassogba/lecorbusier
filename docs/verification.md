@@ -14,3 +14,17 @@
 - Génération réelle : une création privée de la gare de Lyon a été produite sur le déploiement public. Le premier essai changeait le cadrage ; après priorité explicite à la maquette, le deuxième conserve la vue aérienne, le volume, la toiture et le rythme de façade. La gare est identifiable. Les essais n'ont pas été publiés dans le classement.
 
 Limites : aucune mesure sur un téléphone physique. Une image générée peut encore varier dans ses détails ; la géométrie 3D enregistrée reste la référence éditable. Les placements sont des propositions créatives, pas une étude de constructibilité. La génération locale a échoué sur l'accès à la photo dans le workflow de développement ; le parcours réel a été validé sur le Worker déployé.
+
+## Carte commune, couleurs et accueil
+
+25 octobre 2026, complément.
+
+- Les volumes publiés ont une couche Three.js commune, indépendante des filtres et de la fiche ouverte. Les maillages sont conservés pendant les votes et les actualisations ; la géométrie modifiée ou supprimée est libérée.
+- Six palettes sont enregistrées dans le design. Le serveur valide leur identifiant. La référence visuelle et les instructions de génération conservent les couleurs des matériaux, avec une balance des blancs neutre.
+- `npm test` : 22 tests réussis. Le nouveau test de scène couvre plusieurs positions géographiques, la réutilisation des maillages, la confidentialité, les modifications et leur destruction. Le test de génération/publication vérifie la palette et les deux images envoyées à OpenAI, avec un fournisseur simulé.
+- Navigateur local : six volumes affichés ensemble ; un septième ajouté par une notification WebSocket simulée. Les filtres et la fermeture d'une fiche conservent les volumes. Un brouillon privé injecté dans la réponse de test reste exclu de la scène. Aucun de ces exemples de test n'a été publié.
+- Sélection directe d'un maillage, choix de couleur au clavier, persistance du brouillon et boutons de 44 px vérifiés. Aucun débordement à 320, 390, 788 et 1440 px. Axe ne signale aucune violation dans l'étape Architecture. CSP contournée uniquement dans le navigateur de test pour charger axe, puis rétablie.
+- Accueil : nouvelle session, rechargement après fermeture, lien de création et action Choisir un lieu vérifiés. L'état est enregistré à la fermeture dans sessionStorage, au lieu du marqueur localStorage permanent. Les liens partagés chargent leur création derrière le dialogue.
+- `npm audit --omit=dev` : aucune vulnérabilité signalée.
+
+Référence pour la durée des sessions : [MDN, sessionStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage). Les anciens exemples qui ne possèdent pas de volume enregistré conservent leur repère photo. Pas de test sur téléphone physique, ni de nouvelle génération OpenAI facturée pour cette modification.

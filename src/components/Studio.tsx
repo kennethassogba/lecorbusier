@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Config, Draft, Place, Design, Coordinate } from "../types";
 import { api } from "../api";
+import { PALETTES, paletteFor } from "../../worker/palettes.js";
 
 export function Studio({
   config,
@@ -240,6 +241,34 @@ export function Studio({
                   </button>
                 ))}
               </div>
+              {draft.design && (
+                <div
+                  className="material-swatches"
+                  role="group"
+                  aria-label={t("Couleur")}
+                >
+                  {PALETTES.map((p) => {
+                    const active =
+                      paletteFor(draft.design, draft.styleId).id === p.id;
+                    return (
+                      <button
+                        type="button"
+                        key={p.id}
+                        aria-label={t(p.name)}
+                        title={t(p.name)}
+                        aria-pressed={active}
+                        onClick={() =>
+                          onDesign({ ...draft.design!, palette: p.id })
+                        }
+                      >
+                        <span style={{ backgroundColor: p.facade }}>
+                          {active && <Check size={19} strokeWidth={2.5} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="field-label">
                 <label htmlFor="instructions">{t("Une idée ?")}</label>
                 <button

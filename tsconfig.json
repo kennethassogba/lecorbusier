@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowJs": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src", "vite.config.ts"]
 }

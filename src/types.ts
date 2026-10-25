@@ -1,5 +1,11 @@
+import type { PaletteId } from "../worker/palettes.js";
 export type Coordinate = [number, number];
-export type Design = { version: 1; footprint: Coordinate[]; height: number };
+export type Design = {
+  version: 1;
+  footprint: Coordinate[];
+  height: number;
+  palette?: PaletteId;
+};
 export type Place = {
   id: string;
   name: string;

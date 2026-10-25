@@ -112,3 +112,108 @@ test("Image guidance explicitly uses the saved model, footprint, height and orig
   assert.ok(prompt.includes(`${design.height} metres`));
   assert.ok(prompt.includes(JSON.stringify(design.footprint)));
 });
+
+test("Palette choices survive validation and transforms and colour real mesh materials", async () => {
+  const { PALETTES } = await import("../worker/palettes.js");
+  for (const palette of PALETTES) {
+    const design = validateDesign(
+      { ...defaultDesign(places[0]), palette: palette.id },
+      places[0],
+    );
+    assert.equal(transformDesign(design, { east: 1 }).palette, palette.id);
+    const model = buildModel(design, "haussmannien");
+    const colours = new Set();
+    model.traverse((mesh) => {
+      if (mesh.isMesh) colours.add("#" + mesh.material.color.getHexString());
+    });
+    assert.ok(colours.has(palette.facade));
+    assert.ok(colours.has(palette.roof));
+    assert.match(designSummary(design), new RegExp(palette.facade));
+    disposeModel(model);
+  }
+  assert.throws(() =>
+    validateDesign(
+      { ...defaultDesign(places[0]), palette: "not-a-palette" },
+      places[0],
+    ),
+  );
+  assert.equal(
+    validateDesign(defaultDesign(places[0]), places[0]).palette,
+    undefined,
+    "Existing saved models remain compatible",
+  );
+});
+
+test("The shared scene retains published geometry across refreshes and excludes private designs", async () => {
+  const { sharedModels } = await import("../src/volume/layer.ts");
+  const { MercatorCoordinate } = await import("maplibre-gl");
+  const shared = sharedModels();
+  const a = {
+    id: "one",
+    design: defaultDesign(places[0]),
+    style_id: "gothique",
+    status: "ready",
+    published_at: 100,
+  };
+  const b = { ...a, id: "two", design: defaultDesign(places[1]) };
+  const privateProposal = { ...a, id: "private", published_at: null };
+  shared.update([
+    a,
+    b,
+    privateProposal,
+    { ...b, id: "unfinished", status: "generating" },
+  ]);
+  assert.equal(shared.entries.size, 2);
+  const model = shared.entries.get(a.id).model;
+  let disposed = false;
+  model.children
+    .find((mesh) => mesh.isMesh)
+    .geometry.addEventListener("dispose", () => {
+      disposed = true;
+    });
+  shared.update([
+    { ...a, votes: 42 },
+    { ...b, votes: 22 },
+  ]);
+  assert.equal(
+    shared.entries.get(a.id).model,
+    model,
+    "Votes do not rebuild meshes",
+  );
+  const origin = MercatorCoordinate.fromLngLat([2.34, 48.86]);
+  const unit = origin.meterInMercatorCoordinateUnits();
+  const actual = new MercatorCoordinate(
+    origin.x + model.position.x * unit,
+    origin.y - model.position.y * unit,
+  ).toLngLat();
+  const expected = centerOf(a.design.footprint);
+  assert.ok(
+    Math.abs(actual.lng - expected[0]) < 1e-8 &&
+      Math.abs(actual.lat - expected[1]) < 1e-8,
+  );
+  shared.visibility(a.design);
+  assert.equal(
+    model.visible,
+    false,
+    "An active editor must not double-render its published footprint",
+  );
+  assert.equal(shared.entries.get(b.id).model.visible, true);
+  shared.visibility(undefined, true);
+  assert.ok(
+    [...shared.entries.values()].every((e) => !e.model.visible),
+    "Generation captures only the active design",
+  );
+  shared.visibility();
+  assert.ok(
+    [...shared.entries.values()].every((e) => e.model.visible),
+    "Closing a proposal restores the entire shared scene",
+  );
+  shared.update([{ ...a, design: { ...a.design, palette: "terracotta" } }, b]);
+  assert.equal(disposed, true);
+  assert.notEqual(shared.entries.get(a.id).model, model);
+  shared.update([a]);
+  assert.equal(shared.entries.size, 1);
+  shared.dispose();
+  assert.equal(shared.group.children.length, 0);
+  assert.equal(shared.entries.size, 0);
+});

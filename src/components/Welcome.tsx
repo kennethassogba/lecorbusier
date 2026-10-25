@@ -10,26 +10,30 @@ const example = examples.find((p) => p.placeId === "louvre")!;
 
 export function Welcome({
   place,
+  showHeader = true,
   onBuild,
   onClose,
 }: {
   place: Place;
+  showHeader?: boolean;
   onBuild: () => void;
   onClose: () => void;
 }) {
   const [showComparison, setShowComparison] = useState(true);
   return (
     <>
-      <header className="sheet-header">
-        <span className="welcome-brand">Le Corbusier</span>
-        <button
-          className="icon-button"
-          aria-label={t("Explorer la carte")}
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
-      </header>
+      {showHeader && (
+        <header className="sheet-header">
+          <span className="welcome-brand">Le Corbusier</span>
+          <button
+            className="icon-button"
+            aria-label={t("Explorer la carte")}
+            onClick={onClose}
+          >
+            <X size={20} />
+          </button>
+        </header>
+      )}
       <div className="sheet-scroll">
         {showComparison && (
           <div className="welcome-comparison">

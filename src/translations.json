@@ -212,5 +212,12 @@
   "La vue 3D est illisible. Réessaie.": "The 3D view could not be read. Try again.",
   "La vue 3D est indisponible. Réessaie.": "The 3D view is unavailable. Try again.",
   "Menu de l’app": "App menu",
-  "La maquette n'est pas prête. Réessaie.": "The model is not ready. Try again."
+  "La maquette n'est pas prête. Réessaie.": "The model is not ready. Try again.",
+  "Couleur": "Colour",
+  "Pierre": "Stone",
+  "Terre cuite": "Terracotta",
+  "Rose": "Rose",
+  "Lavande": "Lavender",
+  "Ardoise": "Slate",
+  "Choisis une couleur du nuancier.": "Choose a colour from the palette."
 }
