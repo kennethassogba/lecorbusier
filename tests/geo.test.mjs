@@ -49,3 +49,37 @@ test("reference location is immutable, source URLs are server-owned, WMS axes an
   assert.match(prompt, /EXACT CENTRE/);
   assert.match(prompt, /Do not invent a ground-level/);
 });
+
+test("Paris address search excludes suburban homonyms before results are limited", async () => {
+  const { searchPlaces } = await import("../worker/geo.js");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(input);
+    // IGN applies limit before the client's boundary filter: the city constraint must be upstream.
+    const constrained = url.searchParams.get("depcode") === "75";
+    return Response.json({
+      features: constrained
+        ? [
+            {
+              geometry: { coordinates: [2.3313, 48.86914] },
+              properties: { label: "12 Rue de la Paix 75002 Paris" },
+            },
+            {
+              geometry: { coordinates: [2.433287, 48.849957] },
+              properties: { label: "12 Rue de la Paix 94300 Vincennes" },
+            },
+          ]
+        : Array.from({ length: 20 }, () => ({
+            geometry: { coordinates: [2.433287, 48.849957] },
+            properties: { label: "12 Rue de la Paix 94300 Vincennes" },
+          })),
+    });
+  };
+  try {
+    const results = await searchPlaces("12 rue de la paix");
+    assert.equal(results.length, 1);
+    assert.match(results[0].name, /75002 Paris/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

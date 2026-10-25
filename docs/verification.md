@@ -3,8 +3,9 @@
 25 octobre 2026. Parcours vérifié : lieu, volume, architecture, signature, génération, image et retour à la maquette.
 
 - `npm run build` : TypeScript et compilation réussis. Le moteur Three.js est séparé du chargement initial et inclus dans le cache PWA.
-- `npm test` : 19 tests réussis. Ils couvrent les 20 monuments et 10 styles, les unités, les contours concaves et invalides, les hauteurs extrêmes, la confidentialité, la persistance et la publication. Le fournisseur OpenAI est simulé dans ces tests.
+- `npm test` : 20 tests réussis. Ils couvrent les 20 monuments et 10 styles, les unités, les contours concaves et invalides, les hauteurs extrêmes, la confidentialité, la persistance et la publication. Le fournisseur OpenAI est simulé dans ces tests.
 - Pipeline : le test de runtime compare les octets des deux références envoyées au modèle. La maquette est la première image, la photo réelle la seconde. La géométrie enregistrée est identique à celle renvoyée par l'API.
+- Adresses : la recherche IGN est filtrée sur Paris avant le classement des résultats, afin que les rues homonymes de banlieue ne masquent pas une adresse parisienne.
 - Navigateur : ouverture de l'atelier pour les 20 monuments. Contour libre, déplacement de sommets au clavier, hauteur numérique et annulation vérifiés.
 - Tactile simulé : le panneau se déplace pendant le geste, avant son relâchement. Le passage du lieu à l'atelier conserve le même panneau DOM.
 - Affichage : 320, 390, 788 et 1440 px, sans débordement horizontal. Contrôles français et anglais vérifiés.

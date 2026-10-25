@@ -88,6 +88,7 @@ export async function searchPlaces(query) {
   const params = new URLSearchParams({
     q: clean(query, 180),
     index: "address,poi",
+    depcode: "75",
     limit: "20",
     lat: "48.86",
     lon: "2.34",
