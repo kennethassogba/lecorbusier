@@ -10,7 +10,6 @@ import {
   animate,
   motion,
   useMotionValue,
-  useMotionTemplate,
   usePresence,
   useMotionValueEvent,
   useTransform,
@@ -47,7 +46,6 @@ export function Sheet({
   const animation = useRef<{ stop: () => void } | null>(null);
   const y = useMotionValue(0);
   const opacity = useMotionValue(1);
-  const transform = useMotionTemplate`translate3d(0, ${y}px, 0)`;
   const clipPath = useTransform(y, (value) =>
     value > 0.1
       ? `inset(0px 0px ${value}px 0px round var(--sheet-radius, 26px 26px 0px 0px))`
@@ -57,7 +55,7 @@ export function Sheet({
     Math.max(
       0,
       (panel.current?.offsetHeight || 0) -
-        28 -
+        44 -
         (summary.current?.offsetHeight || 56),
     );
   function settle(next: boolean, velocity = 0) {
@@ -171,12 +169,14 @@ export function Sheet({
   return (
     <motion.section
       ref={panel}
+      layout={reduceMotion() ? false : "size"}
+      transition={{ layout: { duration: 0.24, ease: easeDrawer } }}
       tabIndex={-1}
       aria-label={label}
       inert={!present}
       data-exiting={!present || undefined}
       className={`map-sheet ${kind} ${collapsed ? "collapsed" : ""}`}
-      style={{ transform, opacity, clipPath }}
+      style={{ y, opacity, clipPath }}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose?.();
       }}
@@ -199,7 +199,7 @@ export function Sheet({
           if (!d || d.id !== e.pointerId) return;
           const delta = e.clientY - d.start;
           if (Math.abs(delta) > 4) dragged.current = true;
-          if (!dragged.current || reduceMotion()) return;
+          if (!dragged.current) return;
           const distance = d.offset + delta,
             limit = rest();
           y.set(
@@ -230,9 +230,13 @@ export function Sheet({
         {label}
         <ChevronUp size={18} />
       </button>
-      <div className="sheet-body" inert={collapsed || !present}>
+      <motion.div
+        layout={reduceMotion() ? false : "position"}
+        className="sheet-body"
+        inert={collapsed || !present}
+      >
         {children}
-      </div>
+      </motion.div>
     </motion.section>
   );
 }

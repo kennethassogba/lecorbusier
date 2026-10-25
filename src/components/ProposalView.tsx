@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { Place, Proposal } from "../types";
 import { PhotoCredit } from "./PhotoCredit";
-import { Sheet } from "./Sheet";
+import { areaOf } from "../../worker/volume.js";
 import { Modal } from "./Modal";
 import { SharePanel } from "./SharePanel";
 export function ProposalView({
@@ -24,6 +24,9 @@ export function ProposalView({
   onPublish,
   onRemix,
   error,
+  showModel,
+  onShowModel,
+  onOrbit,
 }: {
   proposal: Proposal;
   place: Place;
@@ -33,6 +36,9 @@ export function ProposalView({
   onPublish: () => Promise<void>;
   onRemix: () => void;
   error: string;
+  showModel: boolean;
+  onShowModel: (v: boolean) => void;
+  onOrbit: (delta: number) => void;
 }) {
   const [before, setBefore] = useState(false),
     [busy, setBusy] = useState(false),
@@ -60,7 +66,7 @@ export function ProposalView({
   );
   return (
     <>
-      <Sheet label={p.title} kind="result-sheet" onClose={onBack}>
+      <>
         <header className="sheet-header">
           <button
             className="icon-button"
@@ -83,73 +89,128 @@ export function ProposalView({
             <X size={20} />
           </button>
         </header>
-        <div className="sheet-scroll result-scroll">
-          <div className={`result-photo ${generating ? "building" : ""}`}>
-            <button
-              className="photo-open"
-              disabled={!p.image}
-              onClick={() => setFullscreen(true)}
-              aria-label={t("Agrandir la création")}
-            >
-              {p.image ? (
-                <span className="photo-stage" data-before={before}>
-                  <img
-                    className="photo-after"
-                    src={p.image}
-                    alt={before ? "" : p.title}
-                    draggable={false}
-                  />
-                  <img
-                    className="photo-before"
-                    src={place.image}
-                    alt={before ? t(place.name) : ""}
-                    draggable={false}
-                  />
-                </span>
-              ) : (
-                img
-              )}
+        {p.design && (
+          <div
+            className="view-switch"
+            role="group"
+            aria-label={t("Vue de la création")}
+          >
+            <button aria-pressed={showModel} onClick={() => onShowModel(true)}>
+              {t("Maquette 3D")}
             </button>
-            {p.image && (
-              <>
-                <button
-                  className="photo-expand"
-                  aria-label={t("Agrandir la création")}
-                  onClick={() => setFullscreen(true)}
-                >
-                  <Maximize2 size={18} />
-                </button>
-                <div
-                  className="comparison"
-                  data-before={before}
-                  role="group"
-                  aria-label={t("Avant et après")}
-                >
-                  <button aria-pressed={before} onClick={() => setBefore(true)}>
-                    {t("Avant")}
-                  </button>
-                  <button
-                    aria-pressed={!before}
-                    onClick={() => setBefore(false)}
-                  >
-                    {t("Après")}
-                  </button>
-                </div>
-              </>
-            )}
-            {generating && (
-              <div className="generation-status" role="status">
-                <LoaderCircle className="spin" size={24} />
-                <span>
-                  {p.status === "generating"
-                    ? t("Construction...")
-                    : p.status === "planning"
-                      ? t("Préparation...")
-                      : t("En attente...")}
-                </span>
-              </div>
-            )}
+            <button
+              aria-pressed={!showModel}
+              onClick={() => onShowModel(false)}
+            >
+              {t("Image")}
+            </button>
           </div>
+        )}
+        <div
+          className={`sheet-scroll result-scroll ${showModel ? "model-result" : ""}`}
+        >
+          {showModel && p.design ? (
+            <div className="model-summary">
+              <span>
+                <strong>{p.design.height} m</strong>
+                {t("Hauteur")}
+              </span>
+              <span>
+                <strong>
+                  {Math.round(areaOf(p.design.footprint)).toLocaleString(
+                    getLanguage(),
+                  )}{" "}
+                  m²
+                </strong>
+                {t("Emprise")}
+              </span>
+              <button
+                className="secondary-button"
+                onClick={() => onOrbit(60)}
+                aria-label={t("Tourner autour du bâtiment")}
+              >
+                <RotateCcw size={20} />
+              </button>
+              {generating && (
+                <span className="model-progress" role="status">
+                  <LoaderCircle size={17} className="spin" />
+                  {t("Génération de l’image...")}
+                </span>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className={`result-photo ${generating ? "building" : ""}`}>
+                <button
+                  className="photo-open"
+                  disabled={!p.image}
+                  onClick={() => setFullscreen(true)}
+                  aria-label={t("Agrandir la création")}
+                >
+                  {p.image ? (
+                    <span className="photo-stage" data-before={before}>
+                      <img
+                        className="photo-after"
+                        src={p.image}
+                        alt={before ? "" : p.title}
+                        draggable={false}
+                      />
+                      <img
+                        className="photo-before"
+                        src={place.image}
+                        alt={before ? t(place.name) : ""}
+                        draggable={false}
+                      />
+                    </span>
+                  ) : (
+                    img
+                  )}
+                </button>
+                {p.image && (
+                  <>
+                    <button
+                      className="photo-expand"
+                      aria-label={t("Agrandir la création")}
+                      onClick={() => setFullscreen(true)}
+                    >
+                      <Maximize2 size={18} />
+                    </button>
+                    <div
+                      className="comparison"
+                      data-before={before}
+                      role="group"
+                      aria-label={t("Avant et après")}
+                    >
+                      <button
+                        aria-pressed={before}
+                        onClick={() => setBefore(true)}
+                      >
+                        {t("Avant")}
+                      </button>
+                      <button
+                        aria-pressed={!before}
+                        onClick={() => setBefore(false)}
+                      >
+                        {t("Après")}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {generating && (
+                  <div className="generation-status" role="status">
+                    <LoaderCircle className="spin" size={24} />
+                    <span>
+                      {p.status === "generating"
+                        ? t("Construction...")
+                        : p.status === "planning"
+                          ? t("Préparation...")
+                          : t("En attente...")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
           {p.status === "failed" && (
             <div className="error-message" role="alert">
               {t(p.error || "Création interrompue.")}
@@ -163,7 +224,7 @@ export function ProposalView({
               {t(localError || error)}
             </div>
           )}
-          <PhotoCredit place={place} adapted={!!p.image} />
+          {!showModel && <PhotoCredit place={place} adapted={!!p.image} />}
         </div>
         <footer className="sheet-footer result-actions">
           {p.published_at && (
@@ -219,7 +280,7 @@ export function ProposalView({
             </button>
           )}
         </footer>
-      </Sheet>
+      </>
       {sharing && (
         <SharePanel
           proposal={p}

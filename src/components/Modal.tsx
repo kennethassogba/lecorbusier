@@ -85,6 +85,9 @@ export function Modal({
       ref={ref}
       className={`modal ${className}`}
       aria-label={title}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") e.stopPropagation();
+      }}
       onCancel={(e) => {
         e.preventDefault();
         dismiss();

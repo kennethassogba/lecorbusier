@@ -73,7 +73,7 @@ Documentation technique : [OpenAI Images](https://developers.openai.com/api/docs
 
 La carte reste montée pendant le parcours. Les panneaux se réduisent depuis leur poignée (glissement ou bouton), les formulaires tiennent au-dessus du clavier, et les déplacements respectent la préférence de mouvement réduit. Le bouton retour du navigateur restaure les panneaux et ferme les dialogues.
 
-La carte ouvre en perspective. La boussole rétablit le nord ; un contrôle d'orbite apparaît autour du lieu sélectionné. Les maquettes du sélecteur sont des volumes CSS qui représentent les styles, pas une reconstruction des photographies. Motion gère les panneaux et leurs transitions interrompables ; les déplacements sont immédiats au clavier ou avec le mouvement réduit activé.
+La carte ouvre en perspective. La boussole rétablit le nord ; un contrôle d'orbite apparaît autour du lieu sélectionné. La maquette éditable utilise Three.js dans la projection MapLibre. Les joueurs tracent une emprise, déplacent ses sommets, règlent la hauteur et voient les façades, toitures, serveurs et équipements changer avec le style. Motion gère les panneaux et leurs transitions interrompables ; les déplacements sont immédiats au clavier ou avec le mouvement réduit activé.
 
 Le partage prépare le PNG avant le geste pour conserver l'activation requise par Web Share. Sur les navigateurs sans partage natif, la feuille propose le lien, WhatsApp, X et un enregistrement explicite. Les exports gardent le crédit et la source photographique dans l'image. L'installation iOS passe par le menu de partage du navigateur. Les fonctions système dépendent de la plateforme ; aucun envoi de notification push en arrière-plan n'est promis.
 
@@ -85,4 +85,12 @@ Le partage prépare le PNG avant le geste pour conserver l'activation requise pa
 
 Les votes réels restent dans `votes`. Les scores de démonstration sont séparés dans `demo_votes`. Ils ne représentent pas une fréquentation réelle. Les noms des builders figurent dans le classement.
 
-La limite géographique provient du [contour officiel de Paris](https://geo.api.gouv.fr/communes/75056?fields=nom,contour&format=geojson&geometry=contour), bois de Boulogne et de Vincennes inclus. Les références aériennes utilisent [BD ORTHO](https://geoservices.ign.fr/bdortho), sous licence ouverte Etalab, et le [géocodage IGN](https://ignf.github.io/cartes.gouv.fr-documentation/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/). Une vue aérienne reste aérienne dans l'image générée : aucune fausse photographie de rue n'est substituée à l'adresse choisie.
+La limite géographique provient du [contour officiel de Paris](https://geo.api.gouv.fr/communes/75056?fields=nom,contour&format=geojson&geometry=contour), bois de Boulogne et de Vincennes inclus. Les références aériennes utilisent [BD ORTHO](https://geoservices.ign.fr/bdortho), sous licence ouverte Etalab, et le [géocodage IGN](https://ignf.github.io/cartes.gouv.fr-documentation/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/). Sans maquette, une vue aérienne reste aérienne. Avec maquette, la photo IGN fournit le contexte réel et la capture 3D fournit le cadrage et le volume ; le rendu photographique reste une interprétation, pas une reconstruction certifiée des bâtiments.
+
+## Construire en volume
+
+Un seul panneau accompagne le parcours : volume, architecture, signature puis résultat. Le tracé accepte de 3 à 20 sommets, de 60 à 40 000 m² et de 6 à 160 m de haut, dans Paris et à moins de 250 m du lieu choisi. Le déplacement des sommets fonctionne au doigt et au clavier. Les 20 monuments et les adresses utilisent le même modèle de données.
+
+`worker/volume.js` porte les unités et la validation partagée. `src/volume/model.ts` produit les maillages en mètres. La couche MapLibre partage la profondeur de la ville et retire les blocs de contexte qui croisent l'emprise. Le moteur Three.js se charge à l'ouverture de l'atelier et son module est disponible dans le cache PWA.
+
+La migration `0006_volume_design.sql` conserve la géométrie et la capture JPEG privée. OpenAI reçoit la photo du lieu, cette capture et les dimensions. Les propositions conservent leur maquette pour la consultation et le remix. Les créations anciennes n'ont pas de géométrie reconstruite automatiquement. La recherche UX et ses sources sont dans [docs/volume-experience.md](docs/volume-experience.md).

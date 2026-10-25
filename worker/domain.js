@@ -116,11 +116,22 @@ export const escapeHtml = (s) =>
         c
       ],
   );
-export function imagePrompt(place, style, instructions, brief) {
+export function imagePrompt(place, style, instructions, brief, volume = "") {
+  if (volume)
+    return `Photorealistic material and lighting pass on IMAGE 1. Preserve its exact three-quarter aerial camera, viewing direction, composition and geometric silhouette. The detailed data center in image 1 is the player's finished architectural design: do not redesign it. Treat this as rendering a CAD model, not inventing a different building.
+${volume}
+The building's height, footprint, number of storeys, roof outline, balconies, window grid and positions of the rooftop cooling units must match IMAGE 1. Retain every visible edge and the relative size of the building against the surrounding blocks. Improve materials, glass reflections, fine stone detail and realism without adding a tower, an extra wing, additional floors or a larger cooling structure.
+Location: ${place.name}, Paris. ${place.context} IMAGE 2 provides the real landmark facade and surface details. Restore those recognizable details to the corresponding surrounding city blocks in IMAGE 1. Do NOT switch to the ground-level viewpoint of IMAGE 2. Keep the real street alignment and the building at its exact map position.
+Style and material finish: ${style.prompt}. Show real server cabinets behind the glazed ground floor and the already-modelled rooftop cooling equipment. One small DATA CENTER sign. Apply neutral daylight, white-balanced stone, cool gray zinc and realistic contact shadows. No yellow tint, golden hour, amber light, green/lime lighting, glow, plastic or smooth CGI. Do not add map labels, captions, watermark or interface.
+Keep the full building in frame. Extend the existing aerial surroundings vertically to fill the portrait output; never crop away the roof or footprint.
+Surface details requested by the player (only where compatible with the unchanged geometry): ${instructions || "Precise material texture and functional infrastructure."}
+Material brief, subordinate to the exact geometry in IMAGE 1: ${brief}`;
+
   const view =
-    place.referenceKind === "aerial"
+    volume ||
+    (place.referenceKind === "aerial"
       ? "Keep the reference aerial camera and EXACT street grid, roof footprints and urban context. The new data center sits at the EXACT CENTRE of the reference photograph. Render a photorealistic aerial architectural intervention, with a dramatically sculptural roof, visible cooling plant, roof openings revealing server halls. Do not invent a ground-level street view from this overhead reference."
-      : "The actual named landmark MUST remain clearly identifiable and prominently visible. Retain its facade, silhouette, tower, roof geometry and recognisable details. Keep the original camera position, street geometry, skyline, surrounding buildings. Do not substitute a generic Paris street or label a different place.";
+      : "The actual named landmark MUST remain clearly identifiable and prominently visible. Retain its facade, silhouette, tower, roof geometry and recognisable details. Keep the original camera position, street geometry, skyline, surrounding buildings. Do not substitute a generic Paris street or label a different place.");
   return `Create an exceptional photorealistic architectural photograph using the supplied ORIGINAL photograph of ${place.name}, Paris, as the immutable geographical reference. ${place.context}
 CRITICAL GEOGRAPHY: ${view}
 Architecture: ${style.prompt}. Design one bold, coherent, site-specific DATA CENTER with an unforgettable silhouette and ambitious engineering. This should feel like an extraordinary built architectural commission photographed for an architecture magazine. Avoid an ordinary small glass box, a generic office building or a decorative shed. Use depth, layered structure, enormous finely detailed louvers, dramatic structural spans and painstakingly crafted materials. Scale the intervention to the actual site while preserving recognizable surroundings.

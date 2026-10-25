@@ -4,7 +4,7 @@ import { t } from "../i18n";
 import { BASE } from "../api";
 import type { Place } from "../types";
 import examples from "../../data/published-examples.json";
-import { Sheet } from "./Sheet";
+
 import { PhotoCredit } from "./PhotoCredit";
 const example = examples.find((p) => p.placeId === "louvre")!;
 
@@ -19,7 +19,7 @@ export function Welcome({
 }) {
   const [showComparison, setShowComparison] = useState(true);
   return (
-    <Sheet label="Le Corbusier" kind="welcome-sheet" onClose={onClose}>
+    <>
       <header className="sheet-header">
         <span className="welcome-brand">Le Corbusier</span>
         <button
@@ -68,6 +68,6 @@ export function Welcome({
           {t("Choisir un lieu")}
         </button>
       </footer>
-    </Sheet>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { useIsPresent } from "motion/react";
-import { ArchitectureModel } from "./ArchitectureModel";
+import { VolumeControls } from "../volume/VolumeControls";
+import type { VolumeTool } from "../volume/MapVolume";
 import { t, getLanguage, useLanguage } from "../i18n";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
@@ -10,27 +11,49 @@ import {
   Shuffle,
   X,
 } from "lucide-react";
-import type { Config, Draft, Place } from "../types";
+import type { Config, Draft, Place, Design, Coordinate } from "../types";
 import { api } from "../api";
-import { Sheet } from "./Sheet";
+
 export function Studio({
   config,
   place,
   draft,
   setDraft,
   onBack,
+  onClose,
   onGenerate,
   busy,
   error,
+  volumeTool,
+  sketch,
+  onSketch,
+  onTool,
+  onDesign,
+  onUndo,
+  canUndo,
+  volumeError,
+  onOrbit,
+  onCenter,
 }: {
   config: Config;
   place: Place;
   draft: Draft;
   setDraft: (d: Draft) => void;
   onBack: () => void;
+  onClose: () => void;
   onGenerate: () => void;
   busy: boolean;
   error: string;
+  volumeTool: VolumeTool;
+  sketch: Coordinate[] | null;
+  onSketch: (points: Coordinate[] | null) => void;
+  onTool: (tool: VolumeTool) => void;
+  onDesign: (design: Design, commit?: boolean) => void;
+  onUndo: () => void;
+  canUndo: boolean;
+  volumeError: string;
+  onOrbit: (delta: number) => void;
+  onCenter: () => void;
 }) {
   const [step, setStep] = useState(history.state?.studioStep || 0),
     [suggesting, setSuggesting] = useState(false),
@@ -121,11 +144,7 @@ export function Studio({
     }
   }
   return (
-    <Sheet
-      label={step === 0 ? t("Architecture") : t("Nommer la création")}
-      kind="studio-sheet"
-      onClose={onBack}
-    >
+    <>
       <header className="sheet-header">
         <button
           className="icon-button"
@@ -135,30 +154,32 @@ export function Studio({
           <ArrowLeft size={21} />
         </button>
         <div className="sheet-heading">
-          <h1>{step === 0 ? t("Architecture") : t("Nommer")}</h1>
+          <h1>{t(["Volume", "Architecture", "Nommer"][step])}</h1>
           <span>{t(place.name)}</span>
         </div>
         <span
           role="img"
           className="step-dots"
-          aria-label={t("Étape {n} sur 2", { n: step + 1 })}
+          aria-label={t("Étape {n} sur 3", { n: step + 1 })}
         >
           <i className="done" />
-          <i className={step ? "done" : ""} />
+          <i className={step >= 1 ? "done" : ""} />
+          <i className={step >= 2 ? "done" : ""} />
         </span>
         <button
           className="icon-button"
           aria-label={t("Fermer la création")}
-          onClick={onBack}
+          onClick={onClose}
         >
           <X size={20} />
         </button>
       </header>
       <form
+        inert={busy}
         className="studio-form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!step) {
+          if (step < 2) {
             history.pushState(
               {
                 ...history.state,
@@ -166,20 +187,36 @@ export function Studio({
                   ...history.state?.lc,
                   depth: (history.state?.lc?.depth || 0) + 1,
                 },
-                studioStep: 1,
+                studioStep: step + 1,
               },
               "",
             );
-            setStep(1);
+            setStep(step + 1);
+            onTool("orbit");
           } else onGenerate();
         }}
       >
         <div className="sheet-scroll">
-          {step === 0 ? (
+          {step === 0 && draft.design ? (
+            <VolumeControls
+              design={draft.design}
+              place={place}
+              tool={volumeTool}
+              sketch={sketch}
+              onChange={onDesign}
+              onTool={onTool}
+              onSketch={onSketch}
+              onUndo={onUndo}
+              canUndo={canUndo}
+              onOrbit={onOrbit}
+              onCenter={onCenter}
+              error={volumeError}
+            />
+          ) : step === 1 ? (
             <>
               <div
                 ref={styles}
-                className="style-options"
+                className="style-options volume-style-options"
                 role="group"
                 aria-label={t("Style architectural")}
               >
@@ -198,12 +235,7 @@ export function Studio({
                       });
                     }}
                   >
-                    <span className="style-drawing">
-                      <ArchitectureModel styleId={s.id} />
-                      {s.id === draft.styleId && (
-                        <Check size={14} className="style-check" />
-                      )}
-                    </span>
+                    {s.id === draft.styleId && <Check size={15} />}
                     <span>{t(s.name)}</span>
                   </button>
                 ))}
@@ -330,19 +362,31 @@ export function Studio({
           )}
         </div>
         <footer className="sheet-footer">
-          <button type="submit" className="primary-button" disabled={busy}>
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={
+              busy ||
+              (step === 0 && !!sketch) ||
+              (step === 2 && !config.generationAvailable)
+            }
+          >
             {busy ? (
               <LoaderCircle size={19} className="spin" />
-            ) : step ? (
+            ) : step === 2 ? (
               <PlusMark />
             ) : (
               <ArrowRight size={19} />
             )}{" "}
-            {busy ? t("Création...") : step ? t("Construire") : t("Continuer")}
+            {busy
+              ? t("Création...")
+              : step === 2
+                ? t("Générer l’image")
+                : t("Continuer")}
           </button>
         </footer>
       </form>
-    </Sheet>
+    </>
   );
 }
 function PlusMark() {

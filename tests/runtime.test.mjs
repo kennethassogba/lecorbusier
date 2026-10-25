@@ -48,6 +48,7 @@ test(
             "0002_free_places_and_demo.sql",
             "0003_image_revision.sql",
             "0004_language.sql",
+            "0006_volume_design.sql",
           ].map((name) =>
             readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
           ),
@@ -276,6 +277,7 @@ test(
             "0002_free_places_and_demo.sql",
             "0003_image_revision.sql",
             "0004_language.sql",
+            "0006_volume_design.sql",
           ].map((name) =>
             readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
           ),

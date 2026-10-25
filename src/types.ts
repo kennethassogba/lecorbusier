@@ -1,3 +1,5 @@
+export type Coordinate = [number, number];
+export type Design = { version: 1; footprint: Coordinate[]; height: number };
 export type Place = {
   id: string;
   name: string;
@@ -14,6 +16,7 @@ export type Place = {
 };
 export type Style = { id: string; name: string; detail: string };
 export type Proposal = {
+  design?: Design;
   id: string;
   place_id: string;
   style_id: string;
@@ -39,6 +42,7 @@ export type Config = {
   generationAvailable: boolean;
 };
 export type Draft = {
+  design?: Design;
   location?: Place;
   placeId: string;
   styleId: string;

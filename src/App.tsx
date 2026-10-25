@@ -1,4 +1,6 @@
 import { AnimatePresence } from "motion/react";
+import { defaultDesign, validateDesign } from "../worker/volume.js";
+import type { VolumeTool } from "./volume/MapVolume";
 import { t, useLanguage, setLanguage } from "./i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -9,6 +11,7 @@ import {
   Heart,
   LoaderCircle,
   MoreHorizontal,
+  MapPin,
   Map as MapInfoIcon,
   Plus,
   Search,
@@ -28,7 +31,14 @@ import { Sheet } from "./components/Sheet";
 import { Modal } from "./components/Modal";
 import { SharePanel } from "./components/SharePanel";
 import { api, readLocal, saveLocal, BASE } from "./api";
-import type { Config, Draft, Proposal, Place } from "./types";
+import type {
+  Config,
+  Draft,
+  Proposal,
+  Place,
+  Design,
+  Coordinate,
+} from "./types";
 import initialPlaces from "../data/places.json";
 import { STYLES } from "../worker/domain.js";
 const initialConfig: Config = {
@@ -64,6 +74,16 @@ export default function App() {
       ...defaultDraft,
       ...readLocal("lc-draft", {}),
     }));
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const [volumeTool, setVolumeTool] = useState<VolumeTool>("orbit");
+  const [sketch, setSketch] = useState<Coordinate[] | null>(null);
+  const [volumeError, setVolumeError] = useState("");
+  const [showModel, setShowModel] = useState(false);
+  const [undoCount, setUndoCount] = useState(0);
+  const designHistory = useRef<{ past: Design[]; baseline?: Design }>({
+    past: [],
+  });
   const [panel, setPanel] = useState<Panel>(() =>
       !readLocal("lc-welcome-v1", false) &&
       !location.pathname.includes("/p/") &&
@@ -170,9 +190,55 @@ export default function App() {
     root = useRef<HTMLElement>(null),
     known = useRef<Map<string, string> | null>(null);
   const setDraft = (d: Draft) => {
+    draftRef.current = d;
     setDraftState(d);
     saveLocal("lc-draft", d);
   };
+  function changeDesign(next: Design, commit = true) {
+    const current = draftRef.current;
+    const loc =
+      current.location || initialPlaces.find((p) => p.id === current.placeId);
+    if (!loc) return;
+    try {
+      const valid = validateDesign(next, loc);
+      const history = designHistory.current;
+      const beforeCommit = history.baseline || current.design;
+      if (!commit && !history.baseline) history.baseline = current.design;
+      if (commit) {
+        const before = history.baseline || current.design;
+        if (before && JSON.stringify(before) !== JSON.stringify(valid))
+          history.past = [...history.past, before].slice(-30);
+        history.baseline = undefined;
+        setUndoCount(history.past.length);
+      }
+      setDraft({ ...current, design: valid });
+      setVolumeError("");
+      if (commit && beforeCommit?.height !== valid.height)
+        mapControl.current?.volume(valid, volumeTool !== "orbit");
+    } catch (e) {
+      // A drag can finish outside the allowed area after valid intermediate moves.
+      const history = designHistory.current;
+      if (commit && history.baseline) {
+        if (JSON.stringify(history.baseline) !== JSON.stringify(current.design))
+          history.past = [...history.past, history.baseline].slice(-30);
+        history.baseline = undefined;
+        setUndoCount(history.past.length);
+      }
+      setVolumeError((e as Error).message);
+    }
+  }
+  function undoDesign() {
+    const previous = designHistory.current.past.pop();
+    if (previous) setDraft({ ...draftRef.current, design: previous });
+    designHistory.current.baseline = undefined;
+    setUndoCount(designHistory.current.past.length);
+    setVolumeError("");
+  }
+  function useVolumeTool(tool: VolumeTool) {
+    setVolumeTool(tool);
+    const design = draftRef.current.design;
+    if (design) mapControl.current?.volume(design, tool !== "orbit");
+  }
   const refresh = useCallback(async () => {
     if (refreshing.current || !navigator.onLine) {
       setLoading(false);
@@ -463,6 +529,24 @@ export default function App() {
     filter === "mine" ? mine : filter === "top" ? ranked : proposals;
   const mapProposals =
     filter === "mine" ? mine.filter((p) => p.published_at) : proposals;
+  useEffect(() => {
+    if (panel === "studio" && draftRef.current.design) {
+      const timer = setTimeout(
+        () =>
+          mapControl.current?.volume(
+            draftRef.current.design!,
+            volumeTool !== "orbit",
+          ),
+        60,
+      );
+      return () => clearTimeout(timer);
+    }
+    if (panel === "proposal" && showModel && current?.design)
+      mapControl.current?.volume(current.design);
+  }, [panel, selected, showModel]);
+  useEffect(() => {
+    if (current?.status === "ready") setShowModel(false);
+  }, [current?.id, current?.status]);
   function remember(
     next: Panel,
     id: string | null = null,
@@ -537,6 +621,7 @@ export default function App() {
     setLocating(false);
     remember("proposal", p.place_id, filter, false, p);
     setCurrent(p);
+    setShowModel(!!p.design && p.status !== "ready");
     setSelected(p.place_id);
     setPanel("proposal");
     setBuilding(false);
@@ -552,8 +637,17 @@ export default function App() {
       ...draft,
       placeId: place.id,
       location: place.referenceKind === "aerial" ? place : undefined,
+      design:
+        draft.placeId === place.id && draft.design
+          ? draft.design
+          : defaultDesign(place),
     });
     setPanel("studio");
+    setVolumeTool("orbit");
+    setSketch(null);
+    setVolumeError("");
+    designHistory.current = { past: [] };
+    setUndoCount(0);
     setBuilding(false);
     setError("");
   }
@@ -573,7 +667,10 @@ export default function App() {
     const requestId = crypto.randomUUID();
     saveLocal("lc-active", requestId);
     try {
-      await api("/generate", { ...draft, requestId, language });
+      const designImage = draft.design
+        ? await mapControl.current?.capture()
+        : undefined;
+      await api("/generate", { ...draft, designImage, requestId, language });
       const p = await api<Proposal>("/proposals/" + requestId);
       open(p);
       void refresh();
@@ -622,8 +719,14 @@ export default function App() {
       styleId: current.style_id,
       title: "",
       instructions: current.instructions || "",
+      design: current.design || defaultDesign(place),
     });
     setSelected(current.place_id);
+    setVolumeTool("orbit");
+    setSketch(null);
+    setVolumeError("");
+    designHistory.current = { past: [] };
+    setUndoCount(0);
     setPanel("studio");
   }
   async function share() {
@@ -698,7 +801,7 @@ export default function App() {
   return (
     <main
       ref={root}
-      className={`app-shell panel-${panel} ${building ? "building-mode" : ""}`}
+      className={`app-shell panel-${panel} ${building ? "building-mode" : ""} ${panel === "studio" || (showModel && panel === "proposal") ? "volume-workspace" : ""} ${sketch ? "drawing-volume" : ""}`}
     >
       <ParisMap
         places={places.filter(
@@ -717,73 +820,106 @@ export default function App() {
             void pick(point);
           else if (!point && panel === "place") close();
         }}
+        design={
+          panel === "studio"
+            ? draft.design
+            : panel === "proposal" && showModel
+              ? current?.design
+              : undefined
+        }
+        styleId={panel === "studio" ? draft.styleId : current?.style_id}
+        volumeTool={panel === "studio" ? volumeTool : "orbit"}
+        sketch={panel === "studio" ? sketch : null}
+        onDesignChange={changeDesign}
+        onSketchPoint={(point) =>
+          setSketch((old) => (old && old.length < 20 ? [...old, point] : old))
+        }
         control={mapControl}
       />
       <header className="map-header">
-        <div className="search-bar">
-          <Search size={20} aria-hidden="true" />
-          <input
-            type="search"
-            aria-label={t("Rechercher à Paris")}
-            placeholder={t("Lieu ou adresse à Paris")}
-            value={query}
-            onFocus={() => {
-              locationRequest.current++;
-              setLocating(false);
-              if (panel !== "search") remember("search");
-              setPanel("search");
-            }}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.currentTarget.blur();
-                close();
-              }
-            }}
-          />
-          <button
-            className="icon-button"
-            aria-label={t("Partager l'app")}
-            onClick={() => void share()}
-          >
-            <Share2 size={20} />
-          </button>
-          <button
-            className="icon-button"
-            aria-label={t("Menu de l'app")}
-            onClick={() => setMenu(true)}
-          >
-            <MoreHorizontal size={22} />
-          </button>
-        </div>
-        <nav className="map-filters" aria-label={t("Créations sur la carte")}>
-          <button
-            aria-pressed={filter === "all"}
-            onClick={() => collection("all")}
-          >
-            {t("Tout")}
-          </button>
-          <button
-            aria-pressed={filter === "top"}
-            onClick={() => collection("top")}
-          >
-            <Trophy size={15} />
-            {t("Top")}
-          </button>
-          <button
-            aria-pressed={filter === "mine"}
-            onClick={() => collection("mine")}
-          >
-            <UserRound size={15} />
-            {t("Les miens")}
-            {mine.some((p) => !p.published_at) && (
-              <span
-                className="pending-dot"
-                aria-label={t("Créations en cours")}
+        {panel === "studio" ? (
+          <div className="editor-location">
+            <MapPin size={17} />
+            <span>{t(place.name)}</span>
+            <button
+              className="icon-button"
+              aria-label={t("Menu de l’app")}
+              onClick={() => setMenu(true)}
+            >
+              <MoreHorizontal size={21} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="search-bar">
+              <Search size={20} aria-hidden="true" />
+              <input
+                type="search"
+                aria-label={t("Rechercher à Paris")}
+                placeholder={t("Lieu ou adresse à Paris")}
+                value={query}
+                onFocus={() => {
+                  locationRequest.current++;
+                  setLocating(false);
+                  if (panel !== "search") remember("search");
+                  setPanel("search");
+                }}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.currentTarget.blur();
+                    close();
+                  }
+                }}
               />
-            )}
-          </button>
-        </nav>
+              <button
+                className="icon-button"
+                aria-label={t("Partager l'app")}
+                onClick={() => void share()}
+              >
+                <Share2 size={20} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label={t("Menu de l'app")}
+                onClick={() => setMenu(true)}
+              >
+                <MoreHorizontal size={22} />
+              </button>
+            </div>
+            <nav
+              className="map-filters"
+              aria-label={t("Créations sur la carte")}
+            >
+              <button
+                aria-pressed={filter === "all"}
+                onClick={() => collection("all")}
+              >
+                {t("Tout")}
+              </button>
+              <button
+                aria-pressed={filter === "top"}
+                onClick={() => collection("top")}
+              >
+                <Trophy size={15} />
+                {t("Top")}
+              </button>
+              <button
+                aria-pressed={filter === "mine"}
+                onClick={() => collection("mine")}
+              >
+                <UserRound size={15} />
+                {t("Les miens")}
+                {mine.some((p) => !p.published_at) && (
+                  <span
+                    className="pending-dot"
+                    aria-label={t("Créations en cours")}
+                  />
+                )}
+              </button>
+            </nav>
+          </>
+        )}
       </header>
       {building && panel === "none" && (
         <div className="map-crosshair" aria-hidden="true">
@@ -848,249 +984,277 @@ export default function App() {
         </>
       )}
       <AnimatePresence initial={false}>
-        {panel === "welcome" && (
-          <Welcome
-            key="welcome"
-            place={config.places.find((p) => p.id === "louvre")!}
-            onBuild={add}
-            onClose={close}
-          />
-        )}
-        {panel === "place" && (
+        {panel !== "none" && (
           <Sheet
-            key="place"
-            label={t(place.name)}
-            kind="place-sheet"
+            key="workspace-panel"
+            label={
+              panel === "proposal"
+                ? current?.title || t("Création")
+                : panel === "studio"
+                  ? t("Construire")
+                  : panel === "place"
+                    ? t(place.name)
+                    : panel === "collection"
+                      ? filter === "top"
+                        ? t("Top")
+                        : t("Mes créations")
+                      : panel === "search"
+                        ? t("Rechercher à Paris")
+                        : "Le Corbusier"
+            }
+            kind={`${panel === "proposal" ? "result" : panel}-sheet ${showModel && panel === "proposal" ? "model-sheet" : ""}`}
             onClose={close}
+            autoFocus={panel !== "search"}
           >
-            <div className="place-heading">
-              <button
-                className="place-photo"
-                aria-label={t("Voir {lieu}", { lieu: t(place.name) })}
-                onClick={() => setPreviewPlace(place)}
-              >
-                <img src={place.image} alt="" />
-              </button>
-              <div>
-                <h1>{t(place.name)}</h1>
-                <span>{t(place.arrondissement)} · Paris</span>
-              </div>
-              <button
-                className="icon-button"
-                aria-label={t("Fermer le lieu")}
-                onClick={close}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {proposals.some((p) => p.place_id === place.id) && (
-              <div className="sheet-scroll local-creations">
-                {proposals
-                  .filter((p) => p.place_id === place.id)
-                  .map((p) =>
-                    card(
-                      p,
-                      undefined,
-                      t(
-                        config.styles.find((s) => s.id === p.style_id)?.name ||
-                          "",
-                      ),
-                    ),
-                  )}
-              </div>
+            {panel === "welcome" && (
+              <Welcome
+                key="welcome"
+                place={config.places.find((p) => p.id === "louvre")!}
+                onBuild={add}
+                onClose={close}
+              />
             )}
-            <footer className="sheet-footer">
-              <button
-                className="primary-button"
-                onClick={start}
-                disabled={!online || !config.generationAvailable}
-              >
-                <Plus size={20} />
-                {t("Construire ici")}
-              </button>
-              {online && !config.generationAvailable && (
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    void api<Config>("/config")
-                      .then(setConfig)
-                      .catch(() => setError(t("Connexion perdue. Réessaie.")))
-                  }
-                >
-                  {loading ? t("Connexion...") : t("Réessayer")}
-                </button>
-              )}
-            </footer>
-          </Sheet>
-        )}
-        {panel === "studio" && (
-          <Studio
-            key="studio"
-            config={config}
-            place={places.find((p) => p.id === draft.placeId) || place}
-            draft={draft}
-            setDraft={setDraft}
-            onBack={() => {
-              if (history.state?.lc?.depth) history.back();
-              else setPanel("place");
-            }}
-            onGenerate={() => void generate()}
-            busy={busy}
-            error={error}
-          />
-        )}
-        {panel === "proposal" && current && (
-          <ProposalView
-            key={"proposal-" + current.id}
-            proposal={current}
-            place={place}
-            voted={votes.includes(current.id)}
-            onBack={close}
-            onVote={vote}
-            onPublish={publish}
-            onRemix={remix}
-            error={error}
-          />
-        )}
-        {panel === "search" && (
-          <Sheet
-            label={t("Rechercher à Paris")}
-            key="search"
-            kind="search-sheet"
-            onClose={close}
-            autoFocus={false}
-          >
-            <header className="sheet-header">
-              <h1>{t("Lieux")}</h1>
-              <button
-                className="icon-button"
-                aria-label={t("Fermer la recherche")}
-                onClick={close}
-              >
-                <X size={20} />
-              </button>
-            </header>
-            <div className="sheet-scroll places-list">
-              {query &&
-                proposals
-                  .filter((p) =>
-                    normalize(p.title + " " + p.author).includes(
-                      normalize(query),
-                    ),
-                  )
-                  .map((p) => card(p))}
-              {config.places
-                .filter((p) =>
-                  normalize(
-                    p.name + " " + t(p.name) + " " + p.arrondissement,
-                  ).includes(normalize(query)),
-                )
-                .map((p) => (
+            {panel === "place" && (
+              <>
+                <div className="place-heading">
                   <button
-                    className="place-row"
-                    key={p.id}
-                    onClick={() => choose(p)}
+                    className="place-photo"
+                    aria-label={t("Voir {lieu}", { lieu: t(place.name) })}
+                    onClick={() => setPreviewPlace(place)}
                   >
-                    <img src={p.image} alt="" loading="lazy" />
-                    <span>
-                      <strong>{t(p.name)}</strong>
-                      <small>{t(p.arrondissement)}</small>
-                    </span>
-                    <ChevronRight size={18} />
+                    <img src={place.image} alt="" />
                   </button>
-                ))}
-              {searchResults
-                .filter(
-                  (p) =>
-                    !config.places.some(
-                      (c) => normalize(c.name) === normalize(p.name),
-                    ),
-                )
-                .map((p) => (
+                  <div>
+                    <h1>{t(place.name)}</h1>
+                    <span>{t(place.arrondissement)} · Paris</span>
+                  </div>
                   <button
-                    className="place-row address-row"
-                    key={p.id}
-                    onClick={() => choose(p)}
+                    className="icon-button"
+                    aria-label={t("Fermer le lieu")}
+                    onClick={close}
                   >
-                    <span className="address-icon">
-                      <Search size={20} />
-                    </span>
-                    <span>
-                      <strong>{t(p.name)}</strong>
-                      <small>{t("Paris")}</small>
-                    </span>
-                    <ChevronRight size={18} />
-                  </button>
-                ))}
-              {searching && (
-                <div className="search-status" role="status">
-                  <LoaderCircle className="spin" size={18} />
-                  {t("Recherche...")}
-                </div>
-              )}
-              {searchError && (
-                <div className="error-message" role="alert">
-                  {t(searchError)}
-                  <button className="text-button" onClick={add}>
-                    {t("Choisir sur la carte")}
+                    <X size={20} />
                   </button>
                 </div>
-              )}
-              {query.length >= 3 &&
-                !searching &&
-                !searchError &&
-                !searchResults.length &&
-                !config.places.some((p) =>
-                  normalize(p.name + " " + t(p.name)).includes(
-                    normalize(query),
-                  ),
-                ) &&
-                !proposals.some((p) =>
-                  normalize(p.title + " " + p.author).includes(
-                    normalize(query),
-                  ),
-                ) && (
-                  <div className="empty-state">
-                    <span>{t("Aucun résultat dans Paris")}</span>
-                    <button className="text-button" onClick={add}>
-                      {t("Choisir sur la carte")}
-                    </button>
+                {proposals.some((p) => p.place_id === place.id) && (
+                  <div className="sheet-scroll local-creations">
+                    {proposals
+                      .filter((p) => p.place_id === place.id)
+                      .map((p) =>
+                        card(
+                          p,
+                          undefined,
+                          t(
+                            config.styles.find((s) => s.id === p.style_id)
+                              ?.name || "",
+                          ),
+                        ),
+                      )}
                   </div>
                 )}
-            </div>
-          </Sheet>
-        )}
-        {panel === "collection" && (
-          <Sheet
-            key="collection"
-            label={filter === "top" ? t("Top") : t("Mes créations")}
-            kind="collection-sheet"
-            onClose={close}
-          >
-            <header className="sheet-header">
-              <h1>{filter === "top" ? t("Top") : t("Mes créations")}</h1>
-              <button
-                className="icon-button"
-                aria-label={t("Fermer la liste")}
-                onClick={close}
-              >
-                <X size={20} />
-              </button>
-            </header>
-            <div className="sheet-scroll collection-grid">
-              {visible.map((p, i) => card(p, filter === "top" ? i : undefined))}
-              {!visible.length && (
-                <div className="empty-state">
-                  <span>
-                    {loading ? t("Chargement...") : t("Aucune création")}
-                  </span>
-                  <button className="primary-button" onClick={add}>
-                    <Plus size={19} />
-                    {t("Construire")}
+                <footer className="sheet-footer">
+                  <button className="primary-button" onClick={start}>
+                    <Plus size={20} />
+                    {t("Construire ici")}
                   </button>
+                  {online && !config.generationAvailable && (
+                    <button
+                      className="text-button"
+                      onClick={() =>
+                        void api<Config>("/config")
+                          .then(setConfig)
+                          .catch(() =>
+                            setError(t("Connexion perdue. Réessaie.")),
+                          )
+                      }
+                    >
+                      {loading ? t("Connexion...") : t("Réessayer")}
+                    </button>
+                  )}
+                </footer>
+              </>
+            )}
+            {panel === "studio" && (
+              <Studio
+                key="studio"
+                config={config}
+                place={places.find((p) => p.id === draft.placeId) || place}
+                draft={draft}
+                setDraft={setDraft}
+                onBack={() => {
+                  if (history.state?.lc?.depth) history.back();
+                  else setPanel("place");
+                }}
+                onClose={close}
+                onGenerate={() => void generate()}
+                busy={busy}
+                error={error}
+                volumeTool={volumeTool}
+                sketch={sketch}
+                onSketch={setSketch}
+                onTool={useVolumeTool}
+                onDesign={changeDesign}
+                onUndo={undoDesign}
+                canUndo={undoCount > 0}
+                volumeError={volumeError}
+                onOrbit={(delta) => mapControl.current?.orbit(delta)}
+                onCenter={() => {
+                  const p = mapControl.current?.center();
+                  if (p)
+                    setSketch((old) =>
+                      old && old.length < 20 ? [...old, [p.lng, p.lat]] : old,
+                    );
+                }}
+              />
+            )}
+            {panel === "proposal" && current && (
+              <ProposalView
+                key={"proposal-" + current.id}
+                proposal={current}
+                place={place}
+                voted={votes.includes(current.id)}
+                onBack={close}
+                onVote={vote}
+                onPublish={publish}
+                onRemix={remix}
+                showModel={showModel}
+                onShowModel={setShowModel}
+                onOrbit={(delta) => mapControl.current?.orbit(delta)}
+                error={error}
+              />
+            )}
+            {panel === "search" && (
+              <>
+                <header className="sheet-header">
+                  <h1>{t("Lieux")}</h1>
+                  <button
+                    className="icon-button"
+                    aria-label={t("Fermer la recherche")}
+                    onClick={close}
+                  >
+                    <X size={20} />
+                  </button>
+                </header>
+                <div className="sheet-scroll places-list">
+                  {query &&
+                    proposals
+                      .filter((p) =>
+                        normalize(p.title + " " + p.author).includes(
+                          normalize(query),
+                        ),
+                      )
+                      .map((p) => card(p))}
+                  {config.places
+                    .filter((p) =>
+                      normalize(
+                        p.name + " " + t(p.name) + " " + p.arrondissement,
+                      ).includes(normalize(query)),
+                    )
+                    .map((p) => (
+                      <button
+                        className="place-row"
+                        key={p.id}
+                        onClick={() => choose(p)}
+                      >
+                        <img src={p.image} alt="" loading="lazy" />
+                        <span>
+                          <strong>{t(p.name)}</strong>
+                          <small>{t(p.arrondissement)}</small>
+                        </span>
+                        <ChevronRight size={18} />
+                      </button>
+                    ))}
+                  {searchResults
+                    .filter(
+                      (p) =>
+                        !config.places.some(
+                          (c) => normalize(c.name) === normalize(p.name),
+                        ),
+                    )
+                    .map((p) => (
+                      <button
+                        className="place-row address-row"
+                        key={p.id}
+                        onClick={() => choose(p)}
+                      >
+                        <span className="address-icon">
+                          <Search size={20} />
+                        </span>
+                        <span>
+                          <strong>{t(p.name)}</strong>
+                          <small>{t("Paris")}</small>
+                        </span>
+                        <ChevronRight size={18} />
+                      </button>
+                    ))}
+                  {searching && (
+                    <div className="search-status" role="status">
+                      <LoaderCircle className="spin" size={18} />
+                      {t("Recherche...")}
+                    </div>
+                  )}
+                  {searchError && (
+                    <div className="error-message" role="alert">
+                      {t(searchError)}
+                      <button className="text-button" onClick={add}>
+                        {t("Choisir sur la carte")}
+                      </button>
+                    </div>
+                  )}
+                  {query.length >= 3 &&
+                    !searching &&
+                    !searchError &&
+                    !searchResults.length &&
+                    !config.places.some((p) =>
+                      normalize(p.name + " " + t(p.name)).includes(
+                        normalize(query),
+                      ),
+                    ) &&
+                    !proposals.some((p) =>
+                      normalize(p.title + " " + p.author).includes(
+                        normalize(query),
+                      ),
+                    ) && (
+                      <div className="empty-state">
+                        <span>{t("Aucun résultat dans Paris")}</span>
+                        <button className="text-button" onClick={add}>
+                          {t("Choisir sur la carte")}
+                        </button>
+                      </div>
+                    )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
+            {panel === "collection" && (
+              <>
+                <header className="sheet-header">
+                  <h1>{filter === "top" ? t("Top") : t("Mes créations")}</h1>
+                  <button
+                    className="icon-button"
+                    aria-label={t("Fermer la liste")}
+                    onClick={close}
+                  >
+                    <X size={20} />
+                  </button>
+                </header>
+                <div className="sheet-scroll collection-grid">
+                  {visible.map((p, i) =>
+                    card(p, filter === "top" ? i : undefined),
+                  )}
+                  {!visible.length && (
+                    <div className="empty-state">
+                      <span>
+                        {loading ? t("Chargement...") : t("Aucune création")}
+                      </span>
+                      <button className="primary-button" onClick={add}>
+                        <Plus size={19} />
+                        {t("Construire")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </Sheet>
         )}
       </AnimatePresence>

@@ -1,5 +1,12 @@
 import { t, useLanguage } from "../i18n";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   Map,
   Marker,
@@ -9,7 +16,12 @@ import {
 } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { Box, Rotate3d, LocateFixed, Minus, Plus } from "lucide-react";
-import type { Place, Proposal } from "../types";
+import type { Place, Proposal, Design, Coordinate } from "../types";
+import type { VolumeTool } from "../volume/MapVolume";
+const MapVolume = lazy(() =>
+  import("../volume/MapVolume").then((m) => ({ default: m.MapVolume })),
+);
+import { centerOf, toLocal } from "../../worker/volume.js";
 import { BASE } from "../api";
 import { reduceMotion } from "../motion";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -18,6 +30,9 @@ export type MapControl = {
   home: () => void;
   focus: (place: Place) => void;
   center: () => { lng: number; lat: number };
+  volume: (design: Design, plan?: boolean) => void;
+  orbit: (delta: number) => void;
+  capture: () => Promise<string>;
 };
 const reduced = reduceMotion;
 export function ParisMap({
@@ -29,6 +44,12 @@ export function ParisMap({
   onProposal,
   onBlank,
   control,
+  design,
+  styleId = "haussmannien",
+  volumeTool = "orbit",
+  sketch = null,
+  onDesignChange = () => {},
+  onSketchPoint = () => {},
 }: {
   places: Place[];
   proposals: Proposal[];
@@ -38,6 +59,12 @@ export function ParisMap({
   onProposal: (p: Proposal) => void;
   onBlank: (point?: { lng: number; lat: number }) => void;
   control: RefObject<MapControl | null>;
+  design?: Design;
+  styleId?: string;
+  volumeTool?: VolumeTool;
+  sketch?: Coordinate[] | null;
+  onDesignChange?: (design: Design, commit?: boolean) => void;
+  onSketchPoint?: (point: Coordinate) => void;
 }) {
   const language = useLanguage();
   const container = useRef<HTMLDivElement>(null),
@@ -46,8 +73,14 @@ export function ParisMap({
   const markers = useRef<
     Record<string, { marker: Marker; el: HTMLButtonElement; key: string }>
   >({});
+  const currentPlace = useRef(places.find((p) => p.id === selected));
+  currentPlace.current = places.find((p) => p.id === selected);
   const latestSelected = useRef(selected);
   latestSelected.current = selected;
+  const editor = useRef({ volumeTool, onSketchPoint });
+  editor.current = { volumeTool, onSketchPoint };
+  const currentDesign = useRef(design);
+  currentDesign.current = design;
   const callbacks = useRef({ onSelect, onProposal, onBlank });
   callbacks.current = { onSelect, onProposal, onBlank };
   const [ready, setReady] = useState(false),
@@ -56,6 +89,7 @@ export function ParisMap({
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     if (!container.current) return;
+    setReady(false);
     let m: MapInstance;
     try {
       m = new Map({
@@ -65,7 +99,7 @@ export function ParisMap({
         zoom: 12.5,
         minZoom: 11,
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-        maxZoom: 19,
+        maxZoom: 20,
         maxBounds: [
           [2.15, 48.75],
           [2.51, 48.99],
@@ -152,7 +186,10 @@ export function ParisMap({
     m.getCanvas().addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        callbacks.current.onBlank(centre());
+        const p = centre();
+        if (editor.current.volumeTool === "draw")
+          editor.current.onSketchPoint([p.lng, p.lat]);
+        else callbacks.current.onBlank(p);
       }
     });
     m.getCanvas().setAttribute(
@@ -205,7 +242,116 @@ export function ParisMap({
               }
             : { top: 80, bottom: 100, left: 420, right: 50 },
       });
-    control.current = { focus, home, center: centre };
+    const fittedZoom = (d: Design, plan = false) => {
+      const origin = centerOf(d.footprint);
+      const span =
+        Math.max(...d.footprint.map((p) => Math.hypot(...toLocal(p, origin)))) *
+        2;
+      return (
+        (plan ? 18.2 : 17.4) -
+        Math.log2(Math.max(1, span / 70, plan ? 1 : d.height / 45))
+      );
+    };
+    const volume = (d: Design, plan = false) => {
+      const mobile = innerWidth < 800;
+      const height = m.getContainer().clientHeight;
+      const landmark = currentPlace.current;
+      const direction = landmark
+        ? toLocal([landmark.lng, landmark.lat], centerOf(d.footprint))
+        : [0, 0];
+      const bearing =
+        Math.hypot(...direction) > 15
+          ? (Math.atan2(direction[0], direction[1]) * 180) / Math.PI
+          : m.getBearing();
+      m.easeTo({
+        center: centerOf(d.footprint),
+        zoom: fittedZoom(d, plan),
+        pitch: plan ? 0 : 58,
+        bearing: plan ? 0 : bearing,
+        padding: mobile
+          ? {
+              top: 70,
+              bottom: Math.min(height * 0.48, 340),
+              left: 20,
+              right: 20,
+            }
+          : { top: 80, bottom: 60, left: 450, right: 60 },
+        duration: reduced() ? 0 : 280,
+      });
+    };
+    const capture = async () => {
+      const d = currentDesign.current;
+      if (!d) throw new Error(t("La maquette n'est pas prête. Réessaie."));
+      const saved = {
+        center: m.getCenter(),
+        zoom: m.getZoom(),
+        pitch: m.getPitch(),
+        bearing: m.getBearing(),
+        padding: m.getPadding(),
+      };
+      m.stop();
+      // Finish the final geometry rebuild before sampling the shared WebGL canvas.
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      if (!m.getLayer("corbs-volume"))
+        throw new Error(t("La maquette n'est pas prête. Réessaie."));
+      try {
+        return await new Promise<string>((resolve, reject) => {
+          const timer = setTimeout(() => {
+            m.off("render", render);
+            reject(new Error(t("La maquette n'est pas prête. Réessaie.")));
+          }, 12000);
+          const render = () => {
+            if (!m.areTilesLoaded()) return;
+            m.off("render", render);
+            clearTimeout(timer);
+            try {
+              const source = m.getCanvas(),
+                size = Math.min(source.width, source.height);
+              const canvas = document.createElement("canvas");
+              canvas.width = canvas.height = 768;
+              canvas
+                .getContext("2d")!
+                .drawImage(
+                  source,
+                  (source.width - size) / 2,
+                  (source.height - size) / 2,
+                  size,
+                  size,
+                  0,
+                  0,
+                  768,
+                  768,
+                );
+              resolve(canvas.toDataURL("image/jpeg", 0.85));
+            } catch (error) {
+              reject(error);
+            }
+          };
+          m.on("render", render);
+          m.jumpTo({
+            center: centerOf(d.footprint),
+            zoom: fittedZoom(d) - 0.35,
+            pitch: 55,
+            padding: { top: 0, bottom: 0, left: 0, right: 0 },
+          });
+          m.triggerRepaint();
+        });
+      } finally {
+        m.jumpTo(saved);
+      }
+    };
+    control.current = {
+      focus,
+      home,
+      center: centre,
+      volume,
+      capture,
+      orbit: (delta) =>
+        m.easeTo({
+          bearing: m.getBearing() + delta,
+          duration: reduced() ? 0 : 280,
+        }),
+    };
     m.once("load", () => {
       if (!latestSelected.current && !location.pathname.includes("/p/")) home();
     });
@@ -346,6 +492,19 @@ export function ParisMap({
         role="region"
         aria-label={t("Carte commune de Paris")}
       />
+      {ready && map.current && design && (
+        <Suspense fallback={null}>
+          <MapVolume
+            map={map.current}
+            design={design}
+            styleId={styleId}
+            tool={volumeTool}
+            sketch={sketch}
+            onChange={onDesignChange}
+            onPoint={onSketchPoint}
+          />
+        </Suspense>
+      )}
       {failed && (
         <button
           className="map-retry"

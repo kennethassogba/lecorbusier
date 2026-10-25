@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./style.css";
+import "./volume/volume.css";
 document.addEventListener(
   "keydown",
   () => {
