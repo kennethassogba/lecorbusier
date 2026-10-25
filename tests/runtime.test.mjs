@@ -359,3 +359,111 @@ test(
     }
   },
 );
+
+test(
+  "Name suggestions use the selected monument or address, language and previous names",
+  { skip: !built },
+  async () => {
+    const calls = [];
+    let malformed = false;
+    const mf = new Miniflare(
+      convertV4MiniflareOptions({
+        modules: true,
+        scriptPath: bundle,
+        compatibilityDate: "2026-10-25",
+        durableObjects: { LIVE: { className: "ParisLive", useSQLite: true } },
+        workflows: {
+          GENERATE: { name: "test-names", className: "GenerateProposal" },
+        },
+        bindings: { OPENAI_API_KEY: "test-only", TEXT_MODEL: "text-test" },
+        outboundService: async (request) => {
+          assert.equal(new URL(request.url).pathname, "/v1/responses");
+          const body = await request.json();
+          calls.push(body);
+          return Response.json({
+            output: [
+              {
+                content: [
+                  {
+                    type: "output_text",
+                    text: malformed
+                      ? '{"names":["Same","Same","Same"]}'
+                      : JSON.stringify({
+                          names: body.instructions.includes(
+                            "Write the names in English",
+                          )
+                            ? [
+                                "Peace of Cache",
+                                "12 Processing Cores",
+                                "Rue de la RAM",
+                              ]
+                            : [
+                                "Terminus Tensor",
+                                "Les Racks de Lyon",
+                                "Le Train des Données",
+                              ],
+                        }),
+                  },
+                ],
+              },
+            ],
+          });
+        },
+      }),
+    );
+    const suggest = (body) =>
+      mf.dispatchFetch("https://example.test/lecorbusier/api/suggest", {
+        method: "POST",
+        headers: {
+          Origin: "https://example.test",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ kind: "names", styleId: "art-deco", ...body }),
+      });
+    try {
+      const monument = await suggest({
+        placeId: "gare-de-lyon",
+        language: "fr",
+        instructions: "Des serveurs sous l'horloge",
+        title: "Premier nom",
+        previous: ["Ancien nom"],
+      });
+      assert.equal(monument.status, 200);
+      assert.equal((await monument.json()).names.length, 3);
+      const first = JSON.parse(calls[0].input);
+      assert.equal(first.lieu, "Gare de Lyon");
+      assert.equal(first.style, "Art déco");
+      assert.equal(first.projet, "Des serveurs sous l'horloge");
+      assert.deepEqual(first.noms_precedents, ["Premier nom", "Ancien nom"]);
+      assert.match(calls[0].instructions, /français/);
+      assert.equal(calls[0].text.format.strict, true);
+      const address = await suggest({
+        placeId: "point-48.86914-2.33130",
+        location: {
+          name: "12 Rue de la Paix",
+          lat: 48.86914,
+          lng: 2.3313,
+          context: "FAKE MONUMENT",
+        },
+        language: "en",
+      });
+      assert.equal(address.status, 200);
+      assert.equal((await address.json()).names[0], "Peace of Cache");
+      assert.equal(JSON.parse(calls[1].input).lieu, "12 Rue de la Paix");
+      assert.ok(!calls[1].input.includes("FAKE MONUMENT"));
+      assert.match(calls[1].instructions, /in English/);
+      const bad = await suggest({
+        placeId: "gare-de-lyon",
+        styleId: "not-a-style",
+      });
+      assert.equal(bad.status, 400);
+      assert.equal(calls.length, 2);
+      malformed = true;
+      const failed = await suggest({ placeId: "gare-de-lyon" });
+      assert.equal(failed.status, 502);
+      assert.match((await failed.json()).error, /Réessaie/);
+    } finally {
+      await mf.dispose();
+    }
+  },
+);

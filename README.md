@@ -9,11 +9,14 @@ Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y ima
 - Placement libre dans Paris : toucher la carte, viser son centre ou chercher une adresse / un lieu. Le géocodage utilise la Géoplateforme IGN ; les points libres partent de la vraie vue aérienne BD ORTHO, avec le site sélectionné au centre.
 - 20 suggestions de lieux de Paris avec photographies réelles, coordonnées et crédits Wikimedia.
 - Français / anglais, langue du téléphone par défaut, choix mémorisé dans le menu. Suggestions et légendes générées dans la langue choisie.
+- Accueil au premier passage, avec un avant/après du Louvre, accessible ensuite depuis « Comment jouer ».
 - 10 styles architecturaux avec maquettes 3D interactives et instructions libres.
 - Photographies générées en lumière neutre, sans dominante jaune.
 - Brief architectural et légende par `gpt-5.4-mini`, image par `gpt-image-2.5-sunburst` à partir de la photo originale.
+- Trois noms proposés à la demande, à partir du lieu ou de l'adresse, du style et des instructions. Les noms restent modifiables pendant la génération.
 - Génération persistante dans Cloudflare Workflows, reprise dans « Mes plans ».
 - Carte partagée, notifications WebSocket, votes réversibles et palmarès.
+- Fiches des lieux avec les créations existantes, leur titre, leur builder, leur style et leurs votes.
 - Liens publics avec métadonnées sociales, comparaison avant/après et export PNG/story.
 - PWA installable : mode autonome, raccourcis système, badge des créations prêtes sur les plateformes compatibles, partage système des liens et images. L'interface, les photos consultées, les dix dernières images publiques et les tuiles récemment visitées restent disponibles hors ligne ; génération, nouveaux quartiers et publication nécessitent le réseau.
 

@@ -1,5 +1,6 @@
+import { useIsPresent } from "motion/react";
 import { ArchitectureModel } from "./ArchitectureModel";
-import { t, getLanguage } from "../i18n";
+import { t, getLanguage, useLanguage } from "../i18n";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -12,13 +13,6 @@ import {
 import type { Config, Draft, Place } from "../types";
 import { api } from "../api";
 import { Sheet } from "./Sheet";
-const names = [
-  "Notre-Dame du GPU",
-  "Le Palais du GPU",
-  "Le Cloud de Paris",
-  "Le Brutalisme artificiel",
-  "Les Halles du serveur",
-];
 export function Studio({
   config,
   place,
@@ -41,6 +35,55 @@ export function Studio({
   const [step, setStep] = useState(history.state?.studioStep || 0),
     [suggesting, setSuggesting] = useState(false),
     [suggestionError, setSuggestionError] = useState("");
+  const language = useLanguage();
+  const present = useIsPresent();
+  const [names, setNames] = useState<string[]>([]);
+  const [naming, setNaming] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const nameRequest = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (!present) nameRequest.current?.abort();
+  }, [present]);
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  useEffect(() => {
+    setNames([]);
+    setNameError("");
+    setNaming(false);
+    return () => nameRequest.current?.abort();
+  }, [place.id, draft.styleId, draft.instructions, language]);
+  async function suggestNames() {
+    nameRequest.current?.abort();
+    const controller = new AbortController();
+    nameRequest.current = controller;
+    setNaming(true);
+    setNameError("");
+    try {
+      const result = await api<{ names: string[] }>(
+        "/suggest",
+        {
+          kind: "names",
+          placeId: place.id,
+          location: draft.location,
+          language,
+          styleId: draft.styleId,
+          instructions: draft.instructions,
+          title: draft.title,
+          previous: names,
+        },
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      setNames(result.names);
+      // Do not replace a title the player edited while the request was running.
+      if (latestDraft.current.title === draft.title)
+        change("title", result.names[0]);
+    } catch (e) {
+      if (!controller.signal.aborted) setNameError((e as Error).message);
+    } finally {
+      if (!controller.signal.aborted) setNaming(false);
+    }
+  }
   const styles = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const list = styles.current;
@@ -58,7 +101,7 @@ export function Studio({
     return () => window.removeEventListener("popstate", restore);
   }, []);
   const change = (key: keyof Draft, value: string) =>
-    setDraft({ ...draft, [key]: value });
+    setDraft({ ...latestDraft.current, [key]: value });
   async function suggest() {
     setSuggesting(true);
     setSuggestionError("");
@@ -215,14 +258,14 @@ export function Studio({
                   type="button"
                   className="text-button"
                   aria-label={t("Proposer un nom")}
-                  onClick={() =>
-                    change(
-                      "title",
-                      t(names[Math.floor(Math.random() * names.length)]),
-                    )
-                  }
+                  onClick={() => void suggestNames()}
+                  disabled={naming}
                 >
-                  <Shuffle size={18} />
+                  {naming ? (
+                    <LoaderCircle size={18} className="spin" />
+                  ) : (
+                    <Shuffle size={18} />
+                  )}
                 </button>
               </div>
               <input
@@ -234,8 +277,38 @@ export function Studio({
                 maxLength={90}
                 value={draft.title}
                 onChange={(e) => change("title", e.target.value)}
-                placeholder={t("Notre-Dame du GPU")}
+                placeholder={t("Un nom pour {lieu}", { lieu: t(place.name) })}
               />
+              {names.length > 0 && (
+                <div
+                  className="name-suggestions"
+                  role="group"
+                  aria-label={t("Noms proposés")}
+                >
+                  {names.map((name) => (
+                    <button
+                      type="button"
+                      key={name}
+                      aria-pressed={draft.title === name}
+                      onClick={() => change("title", name)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {nameError && (
+                <div className="error-message" role="alert">
+                  {t(nameError)}
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => void suggestNames()}
+                  >
+                    {t("Réessayer")}
+                  </button>
+                </div>
+              )}
               <label htmlFor="author-name">{t("Ton pseudo")}</label>
               <input
                 id="author-name"

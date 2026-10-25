@@ -352,11 +352,7 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
   position: relative;
   border: 3px solid #fff;
   background: #fff;
-  box-shadow:
-    1px 1px 0 #bec8d8,
-    3px 3px 0 #e9edf4,
-    0 5px 12px #14263a38;
-  transform: perspective(350px) rotateY(-12deg);
+  box-shadow: none;
   overflow: hidden;
 }
 .city-pin.has-photo img {
@@ -477,12 +473,7 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
   grid-area: photo;
   display: block;
   position: relative;
-  transform-style: preserve-3d;
-  transform: perspective(500px) rotateY(-12deg) rotateZ(-2deg);
-  box-shadow:
-    3px 2px 0 #c0cad9,
-    0 6px 12px #17243d24;
-  border: 2px solid #fff;
+  border: 0;
   overflow: hidden;
   width: 62px;
   height: 93px;
@@ -759,23 +750,20 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
 }
 .local-creations {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 12px;
   padding: 14px 20px 0;
-  scrollbar-width: thin;
 }
-.local-creations button {
-  padding: 0;
-  min-width: 64px;
-  width: 64px;
-  height: 72px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-.local-creations img {
+.local-creations .creation-card {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  box-shadow: none;
+  padding: 12px 0;
+  border-radius: 0;
+  border-top: 1px solid var(--edge);
+}
+.local-creations .creation-card-info strong {
+  display: block;
+  overflow: visible;
 }
 .place-sheet .sheet-footer {
   padding-top: 18px;
@@ -1877,4 +1865,79 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
   .photo-stage img {
     transition: opacity 100ms ease;
   }
+}
+
+.welcome-brand {
+  flex: 1;
+  font-weight: 650;
+  padding-inline-start: 6px;
+}
+.welcome-comparison {
+  max-width: 440px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+}
+.welcome-comparison figure {
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+}
+.welcome-comparison img {
+  width: 100%;
+  height: clamp(120px, 24dvh, 200px);
+  object-fit: cover;
+  border-radius: 4px;
+}
+.welcome-comparison figcaption {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.welcome-copy {
+  padding: 20px 20px 4px;
+}
+.welcome-copy h1 {
+  font-size: clamp(1.5rem, 6vw, 1.875rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  max-width: 22ch;
+}
+.welcome-copy p {
+  margin: 12px 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 44ch;
+}
+@media (max-height: 650px) {
+  .welcome-comparison img {
+    height: 110px;
+  }
+}
+
+.name-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+.name-suggestions button {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  text-align: start;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.name-suggestions button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: #f3f7ff;
 }

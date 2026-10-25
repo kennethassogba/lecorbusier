@@ -9,6 +9,7 @@ import {
   Heart,
   LoaderCircle,
   MoreHorizontal,
+  Map as MapInfoIcon,
   Plus,
   Search,
   Share2,
@@ -19,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { ParisMap, type MapControl } from "./components/ParisMap";
+import { Welcome } from "./components/Welcome";
 import { Studio } from "./components/Studio";
 import { ProposalView } from "./components/ProposalView";
 import { PhotoCredit } from "./components/PhotoCredit";
@@ -41,7 +43,14 @@ const defaultDraft: Draft = {
   author: "",
   title: "",
 };
-type Panel = "none" | "place" | "studio" | "proposal" | "search" | "collection";
+type Panel =
+  | "welcome"
+  | "none"
+  | "place"
+  | "studio"
+  | "proposal"
+  | "search"
+  | "collection";
 type Filter = "all" | "top" | "mine";
 const normalize = (s: string) =>
   s
@@ -55,7 +64,14 @@ export default function App() {
       ...defaultDraft,
       ...readLocal("lc-draft", {}),
     }));
-  const [panel, setPanel] = useState<Panel>("none"),
+  const [panel, setPanel] = useState<Panel>(() =>
+      !readLocal("lc-welcome-v1", false) &&
+      !location.pathname.includes("/p/") &&
+      !new URLSearchParams(location.search).has("build") &&
+      !new URLSearchParams(location.search).has("view")
+        ? "welcome"
+        : "none",
+    ),
     [filter, setFilter] = useState<Filter>("all"),
     [selected, setSelected] = useState<string | null>(null),
     [building, setBuilding] = useState(
@@ -90,6 +106,9 @@ export default function App() {
     [searching, setSearching] = useState(false),
     [searchError, setSearchError] = useState("");
   const [locating, setLocating] = useState(false);
+  useEffect(() => {
+    if (panel === "welcome") saveLocal("lc-welcome-v1", true);
+  }, [panel]);
   const locationRequest = useRef(0);
   const places = useMemo(
     () => [
@@ -642,7 +661,7 @@ export default function App() {
     setBuilding(false);
     setPanel("collection");
   }
-  function card(p: Proposal, index?: number) {
+  function card(p: Proposal, index?: number, subtitle?: string) {
     const loc = p.place || places.find((l) => l.id === p.place_id);
     return (
       <button className="creation-card" key={p.id} onClick={() => open(p)}>
@@ -653,7 +672,7 @@ export default function App() {
         <span className="creation-card-info">
           <strong>{p.title}</strong>
           <span className="builder-name">{p.author}</span>
-          <span>{t(loc?.name || "")}</span>
+          <span>{subtitle || t(loc?.name || "")}</span>
         </span>
         {p.published_at ? (
           <span className="card-votes">
@@ -694,7 +713,8 @@ export default function App() {
         onSelect={choose}
         onProposal={open}
         onBlank={(point) => {
-          if (point && ["none", "place"].includes(panel)) void pick(point);
+          if (point && ["none", "place", "welcome"].includes(panel))
+            void pick(point);
           else if (!point && panel === "place") close();
         }}
         control={mapControl}
@@ -828,6 +848,14 @@ export default function App() {
         </>
       )}
       <AnimatePresence initial={false}>
+        {panel === "welcome" && (
+          <Welcome
+            key="welcome"
+            place={config.places.find((p) => p.id === "louvre")!}
+            onBuild={add}
+            onClose={close}
+          />
+        )}
         {panel === "place" && (
           <Sheet
             key="place"
@@ -856,18 +884,19 @@ export default function App() {
               </button>
             </div>
             {proposals.some((p) => p.place_id === place.id) && (
-              <div className="local-creations">
+              <div className="sheet-scroll local-creations">
                 {proposals
                   .filter((p) => p.place_id === place.id)
-                  .map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => open(p)}
-                      aria-label={p.title}
-                    >
-                      <img src={p.image} alt="" />
-                    </button>
-                  ))}
+                  .map((p) =>
+                    card(
+                      p,
+                      undefined,
+                      t(
+                        config.styles.find((s) => s.id === p.style_id)?.name ||
+                          "",
+                      ),
+                    ),
+                  )}
               </div>
             )}
             <footer className="sheet-footer">
@@ -1119,6 +1148,35 @@ export default function App() {
               EN
             </button>
           </div>
+          <button
+            className="menu-row"
+            onClick={() => {
+              setMenu(false);
+              // Use the menu's history entry so Back returns to the previous view once.
+              history.replaceState(
+                {
+                  lc: {
+                    panel: "welcome",
+                    selected: null,
+                    filter: "all",
+                    building: false,
+                    depth: (history.state?.lc?.depth || 0) + 1,
+                  },
+                },
+                "",
+                BASE + "/",
+              );
+              setPanel("welcome");
+              setSelected(null);
+              setBuilding(false);
+              setFilter("all");
+              mapControl.current?.home();
+            }}
+          >
+            <MapInfoIcon />
+            <strong>{t("Comment jouer")}</strong>
+            <ChevronRight size={18} />
+          </button>
           {!installed && (
             <button className="menu-row" onClick={() => void installApp()}>
               <Smartphone size={22} />

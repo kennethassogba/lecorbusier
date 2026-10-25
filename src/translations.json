@@ -161,5 +161,15 @@
   "Le texte est trop long.": "The text is too long.",
   "Le formulaire est illisible. Réessaie.": "The form could not be read. Try again.",
   "Orienter au nord": "Point north",
-  "Tourner autour du lieu": "Rotate around the place"
+  "Tourner autour du lieu": "Rotate around the place",
+  "Explorer la carte": "Explore the map",
+  "Le Louvre aujourd'hui": "The Louvre today",
+  "Le Louvre transformé en data center": "The Louvre reimagined as a data center",
+  "Reconstruis Paris à l'ère de l'IA": "Rebuild Paris for the AI age",
+  "Tu es Le Corbusier. Transforme un vrai lieu en data center et partage ta création sur la carte.": "You are Le Corbusier. Turn a real place into a data center and share your creation on the map.",
+  "Comment jouer": "How to play",
+  "Aucun nom reçu. Réessaie.": "No names received. Try again.",
+  "Un nom pour {lieu}": "A name for {lieu}",
+  "Noms proposés": "Suggested names",
+  "Choisir un lieu": "Choose a place"
 }
