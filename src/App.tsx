@@ -1,3 +1,4 @@
+import { AnimatePresence } from "motion/react";
 import { t, useLanguage, setLanguage } from "./i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -406,11 +407,13 @@ export default function App() {
   // Keep floating map controls and attributions clear of every panel, including keyboard resize.
   useEffect(() => {
     if (!root.current) return;
-    const sheet = root.current.querySelector(".map-sheet");
+    const sheet = root.current.querySelector(".map-sheet:not([data-exiting])");
     const update = () =>
       root.current?.style.setProperty(
         "--panel-height",
-        sheet ? `${sheet.getBoundingClientRect().height}px` : "0px",
+        sheet
+          ? `${Math.max(0, Math.min(sheet.getBoundingClientRect().height, (root.current?.getBoundingClientRect().bottom || innerHeight) - sheet.getBoundingClientRect().top))}px`
+          : "0px",
       );
     const ro = new ResizeObserver(update);
     if (sheet) ro.observe(sheet);
@@ -643,8 +646,10 @@ export default function App() {
     const loc = p.place || places.find((l) => l.id === p.place_id);
     return (
       <button className="creation-card" key={p.id} onClick={() => open(p)}>
-        <img src={p.image || loc?.image} alt="" loading="lazy" />
         {index !== undefined && <span className="rank">{index + 1}</span>}
+        <span className="creation-print">
+          <img src={p.image || loc?.image} alt="" loading="lazy" />
+        </span>
         <span className="creation-card-info">
           <strong>{p.title}</strong>
           <span className="builder-name">{p.author}</span>
@@ -822,230 +827,244 @@ export default function App() {
           )}
         </>
       )}
-      {panel === "place" && (
-        <Sheet label={t(place.name)} kind="place-sheet" onClose={close}>
-          <div className="place-heading">
-            <button
-              className="place-photo"
-              aria-label={t("Voir {lieu}", { lieu: t(place.name) })}
-              onClick={() => setPreviewPlace(place)}
-            >
-              <img src={place.image} alt="" />
-            </button>
-            <div>
-              <h1>{t(place.name)}</h1>
-              <span>{t(place.arrondissement)} · Paris</span>
+      <AnimatePresence initial={false}>
+        {panel === "place" && (
+          <Sheet
+            key="place"
+            label={t(place.name)}
+            kind="place-sheet"
+            onClose={close}
+          >
+            <div className="place-heading">
+              <button
+                className="place-photo"
+                aria-label={t("Voir {lieu}", { lieu: t(place.name) })}
+                onClick={() => setPreviewPlace(place)}
+              >
+                <img src={place.image} alt="" />
+              </button>
+              <div>
+                <h1>{t(place.name)}</h1>
+                <span>{t(place.arrondissement)} · Paris</span>
+              </div>
+              <button
+                className="icon-button"
+                aria-label={t("Fermer le lieu")}
+                onClick={close}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <button
-              className="icon-button"
-              aria-label={t("Fermer le lieu")}
-              onClick={close}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          {proposals.some((p) => p.place_id === place.id) && (
-            <div className="local-creations">
-              {proposals
-                .filter((p) => p.place_id === place.id)
+            {proposals.some((p) => p.place_id === place.id) && (
+              <div className="local-creations">
+                {proposals
+                  .filter((p) => p.place_id === place.id)
+                  .map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => open(p)}
+                      aria-label={p.title}
+                    >
+                      <img src={p.image} alt="" />
+                    </button>
+                  ))}
+              </div>
+            )}
+            <footer className="sheet-footer">
+              <button
+                className="primary-button"
+                onClick={start}
+                disabled={!online || !config.generationAvailable}
+              >
+                <Plus size={20} />
+                {t("Construire ici")}
+              </button>
+              {online && !config.generationAvailable && (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    void api<Config>("/config")
+                      .then(setConfig)
+                      .catch(() => setError(t("Connexion perdue. Réessaie.")))
+                  }
+                >
+                  {loading ? t("Connexion...") : t("Réessayer")}
+                </button>
+              )}
+            </footer>
+          </Sheet>
+        )}
+        {panel === "studio" && (
+          <Studio
+            key="studio"
+            config={config}
+            place={places.find((p) => p.id === draft.placeId) || place}
+            draft={draft}
+            setDraft={setDraft}
+            onBack={() => {
+              if (history.state?.lc?.depth) history.back();
+              else setPanel("place");
+            }}
+            onGenerate={() => void generate()}
+            busy={busy}
+            error={error}
+          />
+        )}
+        {panel === "proposal" && current && (
+          <ProposalView
+            key={"proposal-" + current.id}
+            proposal={current}
+            place={place}
+            voted={votes.includes(current.id)}
+            onBack={close}
+            onVote={vote}
+            onPublish={publish}
+            onRemix={remix}
+            error={error}
+          />
+        )}
+        {panel === "search" && (
+          <Sheet
+            label={t("Rechercher à Paris")}
+            key="search"
+            kind="search-sheet"
+            onClose={close}
+            autoFocus={false}
+          >
+            <header className="sheet-header">
+              <h1>{t("Lieux")}</h1>
+              <button
+                className="icon-button"
+                aria-label={t("Fermer la recherche")}
+                onClick={close}
+              >
+                <X size={20} />
+              </button>
+            </header>
+            <div className="sheet-scroll places-list">
+              {query &&
+                proposals
+                  .filter((p) =>
+                    normalize(p.title + " " + p.author).includes(
+                      normalize(query),
+                    ),
+                  )
+                  .map((p) => card(p))}
+              {config.places
+                .filter((p) =>
+                  normalize(
+                    p.name + " " + t(p.name) + " " + p.arrondissement,
+                  ).includes(normalize(query)),
+                )
                 .map((p) => (
                   <button
+                    className="place-row"
                     key={p.id}
-                    onClick={() => open(p)}
-                    aria-label={p.title}
+                    onClick={() => choose(p)}
                   >
-                    <img src={p.image} alt="" />
+                    <img src={p.image} alt="" loading="lazy" />
+                    <span>
+                      <strong>{t(p.name)}</strong>
+                      <small>{t(p.arrondissement)}</small>
+                    </span>
+                    <ChevronRight size={18} />
                   </button>
                 ))}
-            </div>
-          )}
-          <footer className="sheet-footer">
-            <button
-              className="primary-button"
-              onClick={start}
-              disabled={!online || !config.generationAvailable}
-            >
-              <Plus size={20} />
-              {t("Construire ici")}
-            </button>
-            {online && !config.generationAvailable && (
-              <button
-                className="text-button"
-                onClick={() =>
-                  void api<Config>("/config")
-                    .then(setConfig)
-                    .catch(() => setError(t("Connexion perdue. Réessaie.")))
-                }
-              >
-                {loading ? t("Connexion...") : t("Réessayer")}
-              </button>
-            )}
-          </footer>
-        </Sheet>
-      )}
-      {panel === "studio" && (
-        <Studio
-          config={config}
-          place={places.find((p) => p.id === draft.placeId) || place}
-          draft={draft}
-          setDraft={setDraft}
-          onBack={() => {
-            if (history.state?.lc?.depth) history.back();
-            else setPanel("place");
-          }}
-          onGenerate={() => void generate()}
-          busy={busy}
-          error={error}
-        />
-      )}
-      {panel === "proposal" && current && (
-        <ProposalView
-          key={current.id}
-          proposal={current}
-          place={place}
-          voted={votes.includes(current.id)}
-          onBack={close}
-          onVote={vote}
-          onPublish={publish}
-          onRemix={remix}
-          error={error}
-        />
-      )}
-      {panel === "search" && (
-        <Sheet
-          label="Rechercher"
-          kind="search-sheet"
-          onClose={close}
-          autoFocus={false}
-        >
-          <header className="sheet-header">
-            <h1>{t("Lieux")}</h1>
-            <button
-              className="icon-button"
-              aria-label={t("Fermer la recherche")}
-              onClick={close}
-            >
-              <X size={20} />
-            </button>
-          </header>
-          <div className="sheet-scroll places-list">
-            {query &&
-              proposals
-                .filter((p) =>
-                  normalize(p.title + " " + p.author).includes(
-                    normalize(query),
-                  ),
+              {searchResults
+                .filter(
+                  (p) =>
+                    !config.places.some(
+                      (c) => normalize(c.name) === normalize(p.name),
+                    ),
                 )
-                .map((p) => card(p))}
-            {config.places
-              .filter((p) =>
-                normalize(
-                  p.name + " " + t(p.name) + " " + p.arrondissement,
-                ).includes(normalize(query)),
-              )
-              .map((p) => (
-                <button
-                  className="place-row"
-                  key={p.id}
-                  onClick={() => choose(p)}
-                >
-                  <img src={p.image} alt="" loading="lazy" />
-                  <span>
-                    <strong>{t(p.name)}</strong>
-                    <small>{t(p.arrondissement)}</small>
-                  </span>
-                  <ChevronRight size={18} />
-                </button>
-              ))}
-            {searchResults
-              .filter(
-                (p) =>
-                  !config.places.some(
-                    (c) => normalize(c.name) === normalize(p.name),
-                  ),
-              )
-              .map((p) => (
-                <button
-                  className="place-row address-row"
-                  key={p.id}
-                  onClick={() => choose(p)}
-                >
-                  <span className="address-icon">
-                    <Search size={20} />
-                  </span>
-                  <span>
-                    <strong>{t(p.name)}</strong>
-                    <small>{t("Paris")}</small>
-                  </span>
-                  <ChevronRight size={18} />
-                </button>
-              ))}
-            {searching && (
-              <div className="search-status" role="status">
-                <LoaderCircle className="spin" size={18} />
-                {t("Recherche...")}
-              </div>
-            )}
-            {searchError && (
-              <div className="error-message" role="alert">
-                {t(searchError)}
-                <button className="text-button" onClick={add}>
-                  {t("Choisir sur la carte")}
-                </button>
-              </div>
-            )}
-            {query.length >= 3 &&
-              !searching &&
-              !searchError &&
-              !searchResults.length &&
-              !config.places.some((p) =>
-                normalize(p.name + " " + t(p.name)).includes(normalize(query)),
-              ) &&
-              !proposals.some((p) =>
-                normalize(p.title + " " + p.author).includes(normalize(query)),
-              ) && (
-                <div className="empty-state">
-                  <span>{t("Aucun résultat dans Paris")}</span>
+                .map((p) => (
+                  <button
+                    className="place-row address-row"
+                    key={p.id}
+                    onClick={() => choose(p)}
+                  >
+                    <span className="address-icon">
+                      <Search size={20} />
+                    </span>
+                    <span>
+                      <strong>{t(p.name)}</strong>
+                      <small>{t("Paris")}</small>
+                    </span>
+                    <ChevronRight size={18} />
+                  </button>
+                ))}
+              {searching && (
+                <div className="search-status" role="status">
+                  <LoaderCircle className="spin" size={18} />
+                  {t("Recherche...")}
+                </div>
+              )}
+              {searchError && (
+                <div className="error-message" role="alert">
+                  {t(searchError)}
                   <button className="text-button" onClick={add}>
                     {t("Choisir sur la carte")}
                   </button>
                 </div>
               )}
-          </div>
-        </Sheet>
-      )}
-      {panel === "collection" && (
-        <Sheet
-          label={filter === "top" ? t("Top") : t("Mes créations")}
-          kind="collection-sheet"
-          onClose={close}
-        >
-          <header className="sheet-header">
-            <h1>{filter === "top" ? t("Top") : t("Mes créations")}</h1>
-            <button
-              className="icon-button"
-              aria-label={t("Fermer la liste")}
-              onClick={close}
-            >
-              <X size={20} />
-            </button>
-          </header>
-          <div className="sheet-scroll collection-grid">
-            {visible.map((p, i) => card(p, filter === "top" ? i : undefined))}
-            {!visible.length && (
-              <div className="empty-state">
-                <span>
-                  {loading ? t("Chargement...") : t("Aucune création")}
-                </span>
-                <button className="primary-button" onClick={add}>
-                  <Plus size={19} />
-                  {t("Construire")}
-                </button>
-              </div>
-            )}
-          </div>
-        </Sheet>
-      )}
+              {query.length >= 3 &&
+                !searching &&
+                !searchError &&
+                !searchResults.length &&
+                !config.places.some((p) =>
+                  normalize(p.name + " " + t(p.name)).includes(
+                    normalize(query),
+                  ),
+                ) &&
+                !proposals.some((p) =>
+                  normalize(p.title + " " + p.author).includes(
+                    normalize(query),
+                  ),
+                ) && (
+                  <div className="empty-state">
+                    <span>{t("Aucun résultat dans Paris")}</span>
+                    <button className="text-button" onClick={add}>
+                      {t("Choisir sur la carte")}
+                    </button>
+                  </div>
+                )}
+            </div>
+          </Sheet>
+        )}
+        {panel === "collection" && (
+          <Sheet
+            key="collection"
+            label={filter === "top" ? t("Top") : t("Mes créations")}
+            kind="collection-sheet"
+            onClose={close}
+          >
+            <header className="sheet-header">
+              <h1>{filter === "top" ? t("Top") : t("Mes créations")}</h1>
+              <button
+                className="icon-button"
+                aria-label={t("Fermer la liste")}
+                onClick={close}
+              >
+                <X size={20} />
+              </button>
+            </header>
+            <div className="sheet-scroll collection-grid">
+              {visible.map((p, i) => card(p, filter === "top" ? i : undefined))}
+              {!visible.length && (
+                <div className="empty-state">
+                  <span>
+                    {loading ? t("Chargement...") : t("Aucune création")}
+                  </span>
+                  <button className="primary-button" onClick={add}>
+                    <Plus size={19} />
+                    {t("Construire")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </Sheet>
+        )}
+      </AnimatePresence>
       {notice && panel !== "proposal" && (
         <button className="ready-notice" onClick={() => open(notice)}>
           <img src={notice.image} alt="" />

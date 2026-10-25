@@ -91,7 +91,24 @@ export function ProposalView({
               onClick={() => setFullscreen(true)}
               aria-label={t("Agrandir la création")}
             >
-              {img}
+              {p.image ? (
+                <span className="photo-stage" data-before={before}>
+                  <img
+                    className="photo-after"
+                    src={p.image}
+                    alt={before ? "" : p.title}
+                    draggable={false}
+                  />
+                  <img
+                    className="photo-before"
+                    src={place.image}
+                    alt={before ? t(place.name) : ""}
+                    draggable={false}
+                  />
+                </span>
+              ) : (
+                img
+              )}
             </button>
             {p.image && (
               <>
@@ -104,6 +121,7 @@ export function ProposalView({
                 </button>
                 <div
                   className="comparison"
+                  data-before={before}
                   role="group"
                   aria-label={t("Avant et après")}
                 >

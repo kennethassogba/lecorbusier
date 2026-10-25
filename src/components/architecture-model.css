@@ -1,0 +1,176 @@
+.architecture-model {
+  position: relative;
+  display: block;
+  width: 144px;
+  height: 144px;
+  perspective: 650px;
+  pointer-events: none;
+}
+.model-world {
+  display: block;
+  position: absolute;
+  left: 22px;
+  top: 48px;
+  width: 100px;
+  height: 80px;
+  transform: rotateX(58deg) rotateZ(-32deg);
+  transform-style: preserve-3d;
+}
+.model-ground {
+  position: absolute;
+  inset: 6px 0 0;
+  border-radius: 8px;
+  box-shadow: 10px 16px 20px #182c5130;
+  background: #e4e8f0;
+}
+.model-block {
+  position: absolute;
+  transform-style: preserve-3d;
+  --top: #fafbfe;
+  --front: #e1e7f0;
+  --side: #b8c4d7;
+}
+.model-face {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  backface-visibility: visible;
+}
+.face-top {
+  width: var(--w);
+  height: var(--d);
+  transform: translateZ(var(--h));
+  background: var(--top);
+}
+.face-front,
+.face-back {
+  width: var(--w);
+  height: var(--h);
+  background: var(--front);
+  transform: translateY(var(--d)) rotateX(90deg);
+}
+.face-back {
+  transform: rotateX(90deg);
+}
+.face-left,
+.face-right {
+  width: var(--d);
+  height: var(--h);
+  transform: rotateZ(90deg) rotateX(90deg);
+  background: var(--side);
+}
+.face-right {
+  transform: translateX(var(--w)) rotateZ(90deg) rotateX(90deg);
+}
+.material-stone .face-front,
+.material-curve .face-front {
+  background:
+    repeating-linear-gradient(0deg, #edf1f7 0 6px, transparent 6px 13px),
+    repeating-linear-gradient(
+      90deg,
+      #e3e9f2 0 6px,
+      #5e7597 6px 10px,
+      #bdcbdc 10px 12px
+    );
+  border: 3px solid #e3e9f2;
+}
+.material-stone .face-right,
+.material-curve .face-right {
+  background:
+    repeating-linear-gradient(0deg, #c4cfdf 0 6px, transparent 6px 13px),
+    repeating-linear-gradient(
+      90deg,
+      #c0ccdf 0 6px,
+      #5e7597 6px 10px,
+      #a9bbd3 10px 12px
+    );
+  border: 3px solid #c0ccdf;
+}
+.material-glass {
+  --top: #c8d9ef;
+  --front: #456b9e;
+  --side: #31517f;
+}
+.material-glass .face-front,
+.material-glass .face-right {
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 9px, #a9c5e5 9px 11px),
+    repeating-linear-gradient(90deg, transparent 0 5px, #b4cae4 5px 6px);
+  border: 2px solid #a2b9d5;
+}
+.material-roof {
+  --top: #a5b3c6;
+  --front: #697b95;
+  --side: #52647e;
+}
+.material-roof .face-top {
+  background: repeating-linear-gradient(90deg, #a5b3c6 0 8px, #8495ae 8px 9px);
+}
+.material-vent {
+  --top: #687c98;
+  --front: #354c6d;
+  --side: #263e60;
+}
+.material-vent .face-top {
+  background: radial-gradient(
+    circle,
+    #314869 0 22%,
+    #a0afc4 24% 36%,
+    #435c7c 38% 48%,
+    #788da9 50%
+  );
+}
+.material-vent .face-front {
+  background: repeating-linear-gradient(0deg, #344a69 0 2px, #8c9eb7 2px 3px);
+}
+.material-concrete {
+  --top: #e7ebf2;
+  --front: #b7c2d2;
+  --side: #8798b1;
+}
+.material-concrete .face-front {
+  border-block: 5px solid #bac6d6;
+  background: repeating-linear-gradient(90deg, #7b8ca7 0 3px, #c3cddc 3px 11px);
+}
+.material-cornice {
+  --top: #fff;
+  --front: #d3dce9;
+  --side: #a4b4c9;
+}
+.material-column {
+  --top: #fff;
+  --front: #f4f7fb;
+  --side: #b6c4d6;
+}
+.material-dome {
+  --top: #b5c5da;
+  --front: #8397b4;
+  --side: #617b9f;
+}
+.material-dome .face-top {
+  border-radius: 50%;
+}
+.material-plinth {
+  --top: #f7f9fd;
+  --front: #d3dce9;
+  --side: #b9c6da;
+}
+.style-option.active .material-plinth {
+  --front: #0759ef;
+  --side: #164bb5;
+}
+.style-option.active .model-world {
+  transform: translateY(-3px) rotateX(52deg) rotateZ(-20deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .model-world {
+    transition: transform 280ms var(--ease-out);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .style-option:not(.active):hover .model-world {
+    transform: translateY(-2px) rotateX(54deg) rotateZ(-27deg);
+  }
+}

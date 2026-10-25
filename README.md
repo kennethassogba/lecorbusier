@@ -9,7 +9,7 @@ Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y ima
 - Placement libre dans Paris : toucher la carte, viser son centre ou chercher une adresse / un lieu. Le géocodage utilise la Géoplateforme IGN ; les points libres partent de la vraie vue aérienne BD ORTHO, avec le site sélectionné au centre.
 - 20 suggestions de lieux de Paris avec photographies réelles, coordonnées et crédits Wikimedia.
 - Français / anglais, langue du téléphone par défaut, choix mémorisé dans le menu. Suggestions et légendes générées dans la langue choisie.
-- 10 styles architecturaux et instructions libres.
+- 10 styles architecturaux avec maquettes 3D interactives et instructions libres.
 - Photographies générées en lumière neutre, sans dominante jaune.
 - Brief architectural et légende par `gpt-5.4-mini`, image par `gpt-image-2.5-sunburst` à partir de la photo originale.
 - Génération persistante dans Cloudflare Workflows, reprise dans « Mes plans ».
@@ -69,6 +69,8 @@ Documentation technique : [OpenAI Images](https://developers.openai.com/api/docs
 ## Interface mobile
 
 La carte reste montée pendant le parcours. Les panneaux se réduisent depuis leur poignée (glissement ou bouton), les formulaires tiennent au-dessus du clavier, et les déplacements respectent la préférence de mouvement réduit. Le bouton retour du navigateur restaure les panneaux et ferme les dialogues.
+
+La carte ouvre en perspective. La boussole rétablit le nord ; un contrôle d'orbite apparaît autour du lieu sélectionné. Les maquettes du sélecteur sont des volumes CSS qui représentent les styles, pas une reconstruction des photographies. Motion gère les panneaux et leurs transitions interrompables ; les déplacements sont immédiats au clavier ou avec le mouvement réduit activé.
 
 Le partage prépare le PNG avant le geste pour conserver l'activation requise par Web Share. Sur les navigateurs sans partage natif, la feuille propose le lien, WhatsApp, X et un enregistrement explicite. Les exports gardent le crédit et la source photographique dans l'image. L'installation iOS passe par le menu de partage du navigateur. Les fonctions système dépendent de la plateforme ; aucun envoi de notification push en arrière-plan n'est promis.
 

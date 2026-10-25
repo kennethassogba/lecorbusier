@@ -1,6 +1,20 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./style.css";
+document.addEventListener(
+  "keydown",
+  () => {
+    document.documentElement.dataset.input = "keyboard";
+  },
+  { capture: true },
+);
+document.addEventListener(
+  "pointerdown",
+  () => {
+    document.documentElement.dataset.input = "pointer";
+  },
+  { capture: true },
+);
 createRoot(document.getElementById("root")!).render(<App />);
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   const controlled = !!navigator.serviceWorker.controller;

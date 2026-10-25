@@ -1,5 +1,6 @@
+import { ArchitectureModel } from "./ArchitectureModel";
 import { t, getLanguage } from "../i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,49 +19,6 @@ const names = [
   "Le Brutalisme artificiel",
   "Les Halles du serveur",
 ];
-function Facade({ id }: { id: string }) {
-  const modern = ["brutaliste", "contemporain", "art-deco"].includes(id);
-  return (
-    <svg
-      className={`facade facade-${id}`}
-      viewBox="0 0 96 72"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      aria-hidden="true"
-    >
-      <path d="M10 65h76M19 65V26h58v39" />
-      {id === "art-deco" ? (
-        <path d="M19 26h10V18h12V10h14v8h12v8" />
-      ) : modern ? (
-        <path d="M19 26V14h58v12M19 40h58M48 14v51" />
-      ) : (
-        <path d="M16 26 48 9l32 17ZM23 23h50" />
-      )}
-      {[29, 44, 59].map((x) => (
-        <g key={x}>
-          {["classique", "neoclassique", "neo-classique"].includes(id) ? (
-            <path d={`M${x} 30v28m-3-28h9m-9 28h9`} />
-          ) : (
-            <>
-              <path d={`M${x} 42V32h8v10zM${x} 59V49h8v10z`} />
-              {!modern && <path d={`M${x - 2} 44h12M${x - 2} 61h12`} />}
-            </>
-          )}
-        </g>
-      ))}
-      {["baroque", "rococo", "art-nouveau"].includes(id) && (
-        <path d="M24 26q-8-12 0-10t10 0M72 26q8-12 0-10t-10 0M39 22q9-16 18 0" />
-      )}
-      {id === "haussmannien" && (
-        <path d="M19 25 26 12h44l7 13M33 12V8h5v4M60 12V8h5v4M19 46h58" />
-      )}
-      {id === "gothique" && (
-        <path d="m20 26 7-18 7 18m28 0 7-18 7 18M40 26l8-22 8 22" />
-      )}
-    </svg>
-  );
-}
 export function Studio({
   config,
   place,
@@ -83,6 +41,17 @@ export function Studio({
   const [step, setStep] = useState(history.state?.studioStep || 0),
     [suggesting, setSuggesting] = useState(false),
     [suggestionError, setSuggestionError] = useState("");
+  const styles = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const list = styles.current;
+    const active = list?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (list && active) {
+      list.scrollLeft +=
+        active.getBoundingClientRect().left -
+        list.getBoundingClientRect().left -
+        (list.clientWidth - active.offsetWidth) / 2;
+    }
+  }, [step]);
   useEffect(() => {
     const restore = () => setStep(history.state?.studioStep || 0);
     window.addEventListener("popstate", restore);
@@ -166,6 +135,7 @@ export function Studio({
           {step === 0 ? (
             <>
               <div
+                ref={styles}
                 className="style-options"
                 role="group"
                 aria-label={t("Style architectural")}
@@ -176,10 +146,17 @@ export function Studio({
                     key={s.id}
                     className={`style-option ${s.id === draft.styleId ? "active" : ""}`}
                     aria-pressed={s.id === draft.styleId}
-                    onClick={() => change("styleId", s.id)}
+                    onClick={(e) => {
+                      change("styleId", s.id);
+                      e.currentTarget.scrollIntoView({
+                        behavior: "auto",
+                        block: "nearest",
+                        inline: "nearest",
+                      });
+                    }}
                   >
                     <span className="style-drawing">
-                      <Facade id={s.id} />
+                      <ArchitectureModel styleId={s.id} />
                       {s.id === draft.styleId && (
                         <Check size={14} className="style-check" />
                       )}

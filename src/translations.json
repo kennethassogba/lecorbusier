@@ -159,5 +159,7 @@
   "Attends la fin de la génération.": "Wait for the image to finish.",
   "Recharge la page avant de réessayer.": "Reload the app and try again.",
   "Le texte est trop long.": "The text is too long.",
-  "Le formulaire est illisible. Réessaie.": "The form could not be read. Try again."
+  "Le formulaire est illisible. Réessaie.": "The form could not be read. Try again.",
+  "Orienter au nord": "Point north",
+  "Tourner autour du lieu": "Rotate around the place"
 }

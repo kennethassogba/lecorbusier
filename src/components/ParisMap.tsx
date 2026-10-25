@@ -8,9 +8,10 @@ import {
   type Map as MapInstance,
 } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
-import { LocateFixed, Minus, Plus } from "lucide-react";
+import { Box, Rotate3d, LocateFixed, Minus, Plus } from "lucide-react";
 import type { Place, Proposal } from "../types";
 import { BASE } from "../api";
+import { reduceMotion } from "../motion";
 import "maplibre-gl/dist/maplibre-gl.css";
 setWorkerUrl(workerUrl);
 export type MapControl = {
@@ -18,7 +19,7 @@ export type MapControl = {
   focus: (place: Place) => void;
   center: () => { lng: number; lat: number };
 };
-const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reduced = reduceMotion;
 export function ParisMap({
   places,
   proposals,
@@ -41,6 +42,7 @@ export function ParisMap({
   const language = useLanguage();
   const container = useRef<HTMLDivElement>(null),
     map = useRef<MapInstance | null>(null);
+  const compass = useRef<HTMLSpanElement>(null);
   const markers = useRef<
     Record<string, { marker: Marker; el: HTMLButtonElement; key: string }>
   >({});
@@ -50,7 +52,7 @@ export function ParisMap({
   callbacks.current = { onSelect, onProposal, onBlank };
   const [ready, setReady] = useState(false),
     [failed, setFailed] = useState(false),
-    [threeD, setThreeD] = useState(false);
+    [threeD, setThreeD] = useState(true);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     if (!container.current) return;
@@ -72,7 +74,8 @@ export function ParisMap({
         locale: {
           "AttributionControl.ToggleAttribution": t("Crédits de la carte"),
         },
-        pitch: 0,
+        pitch: 42,
+        bearing: -18,
         maxPitch: 65,
         fadeDuration: 0,
         canvasContextAttributes: { antialias: true },
@@ -89,6 +92,8 @@ export function ParisMap({
       );
       if (attribution?.open)
         attribution.querySelector<HTMLElement>("summary")?.click();
+      if (compass.current)
+        compass.current.style.transform = `rotate(${-m.getBearing()}deg)`;
       setReady(true);
       setFailed(false);
       m.addSource("paris-places", {
@@ -132,6 +137,10 @@ export function ParisMap({
       container.current?.setAttribute("data-ready", "false"),
     );
     m.on("pitchend", () => setThreeD(m.getPitch() > 10));
+    m.on("rotate", () => {
+      if (compass.current)
+        compass.current.style.transform = `rotate(${-m.getBearing()}deg)`;
+    });
     m.on("click", (e) =>
       callbacks.current.onBlank({ lng: e.lngLat.lng, lat: e.lngLat.lat }),
     );
@@ -160,17 +169,18 @@ export function ParisMap({
         const top = Math.min(120, height * 0.2);
         m.flyTo({
           center: [p.lng, p.lat],
-          zoom: 16.2,
-          pitch: 48,
+          zoom: 15.7,
+          pitch: 54,
           bearing: -15,
-          duration: reduced() ? 0 : 850,
+          duration: reduced() ? 0 : 680,
           padding: mobile
             ? {
                 top,
                 bottom: Math.min(
                   Math.max(0, height - top - 80),
-                  (document.querySelector(".map-sheet")?.getBoundingClientRect()
-                    .height || 220) + 24,
+                  (document
+                    .querySelector(".map-sheet:not([data-exiting])")
+                    ?.getBoundingClientRect().height || 220) + 24,
                 ),
                 left: 30,
                 right: 50,
@@ -181,9 +191,9 @@ export function ParisMap({
     const home = () =>
       m.flyTo({
         center: [2.344, 48.863],
-        zoom: window.innerWidth < 800 ? 13.1 : 13,
-        pitch: 0,
-        bearing: 0,
+        zoom: window.innerWidth < 800 ? 13.4 : 13.3,
+        pitch: 42,
+        bearing: -18,
         duration: reduced() ? 0 : 650,
         padding:
           window.innerWidth < 800
@@ -319,7 +329,7 @@ export function ParisMap({
             .addTo(m),
       };
       markers.current[place.id].marker
-        .setOffset([0, items.length && !building ? -40 : 0])
+        .setOffset([0, items.length && !building ? -35 : 0])
         .setLngLat([place.lng, place.lat]);
     }
     for (const [id, item] of Object.entries(markers.current))
@@ -349,7 +359,7 @@ export function ParisMap({
       )}
       <div className="map-tools" aria-label={t("Commandes de la carte")}>
         <button
-          className="map-tool"
+          className="map-tool view-mode"
           aria-label={threeD ? t("Vue 2D") : t("Vue 3D")}
           aria-pressed={threeD}
           onClick={() =>
@@ -362,8 +372,34 @@ export function ParisMap({
             })
           }
         >
-          {threeD ? "2D" : "3D"}
+          <Box size={20} strokeWidth={1.6} />
+          <span>{threeD ? "2D" : "3D"}</span>
         </button>
+        <button
+          className="map-tool map-compass"
+          aria-label={t("Orienter au nord")}
+          onClick={() =>
+            map.current?.easeTo({ bearing: 0, duration: reduced() ? 0 : 350 })
+          }
+        >
+          <span ref={compass} className="compass-needle" aria-hidden="true" />
+        </button>
+        {selected && threeD && (
+          <button
+            className="map-tool"
+            aria-label={t("Tourner autour du lieu")}
+            onClick={() => {
+              const m = map.current;
+              if (m)
+                m.easeTo({
+                  bearing: m.getBearing() + 60,
+                  duration: reduced() ? 0 : 650,
+                });
+            }}
+          >
+            <Rotate3d size={21} strokeWidth={1.7} />
+          </button>
+        )}
         <button
           className="map-tool"
           aria-label={t("Recentrer sur Paris")}
