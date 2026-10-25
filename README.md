@@ -8,7 +8,9 @@ Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y ima
 
 - Placement libre dans Paris : toucher la carte, viser son centre ou chercher une adresse / un lieu. Le géocodage utilise la Géoplateforme IGN ; les points libres partent de la vraie vue aérienne BD ORTHO, avec le site sélectionné au centre.
 - 20 suggestions de lieux de Paris avec photographies réelles, coordonnées et crédits Wikimedia.
+- Français / anglais, langue du téléphone par défaut, choix mémorisé dans le menu. Suggestions et légendes générées dans la langue choisie.
 - 10 styles architecturaux et instructions libres.
+- Photographies générées en lumière neutre, sans dominante jaune.
 - Brief architectural et légende par `gpt-5.4-mini`, image par `gpt-image-2.5-sunburst` à partir de la photo originale.
 - Génération persistante dans Cloudflare Workflows, reprise dans « Mes plans ».
 - Carte partagée, notifications WebSocket, votes réversibles et palmarès.
@@ -76,6 +78,6 @@ Le partage prépare le PNG avant le geste pour conserver l'activation requise pa
 
 `data/examples.json` contient les briefs de 16 créations de démonstration. `node scripts/examples.mjs generate` passe par le même workflow que les joueurs et enregistre les résultats privés dans `output/examples/`. Après inspection visuelle, attribuer `is_demo=1` et `demo_votes` aux seuls exemples concernés, puis exécuter `node scripts/examples.mjs publish`. Les identifiants de requête sont conservés pour ne pas facturer deux fois le même démarrage.
 
-Les votes réels restent dans `votes`. Les scores de démonstration sont séparés dans `demo_votes` et signalés par « démo » à côté du score, sur les cartes et dans la création. Ils ne représentent pas une fréquentation réelle. Les noms des builders figurent dans le classement.
+Les votes réels restent dans `votes`. Les scores de démonstration sont séparés dans `demo_votes`. Ils ne représentent pas une fréquentation réelle. Les noms des builders figurent dans le classement.
 
 La limite géographique provient du [contour officiel de Paris](https://geo.api.gouv.fr/communes/75056?fields=nom,contour&format=geojson&geometry=contour), bois de Boulogne et de Vincennes inclus. Les références aériennes utilisent [BD ORTHO](https://geoservices.ign.fr/bdortho), sous licence ouverte Etalab, et le [géocodage IGN](https://ignf.github.io/cartes.gouv.fr-documentation/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/). Une vue aérienne reste aérienne dans l'image générée : aucune fausse photographie de rue n'est substituée à l'adresse choisie.

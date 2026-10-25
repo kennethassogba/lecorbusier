@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { Place, Proposal } from "./types";
 export async function preparePostcard(
   p: Proposal,
@@ -5,7 +6,7 @@ export async function preparePostcard(
   caption: string,
   meme: boolean,
 ) {
-  if (!p.image) throw new Error("L’image est encore en cours de création.");
+  if (!p.image) throw new Error(t("L’image est encore en cours de création."));
   const image = new Image();
   image.crossOrigin = "anonymous";
   image.src = p.image;
@@ -16,7 +17,7 @@ export async function preparePostcard(
     ? 1920
     : Math.round((image.height * 1080) / image.width) + 230;
   const ctx = c.getContext("2d");
-  if (!ctx) throw new Error("Image indisponible. Réessaie.");
+  if (!ctx) throw new Error(t("Image indisponible. Réessaie."));
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.fillStyle = "#111111";
@@ -55,12 +56,12 @@ export async function preparePostcard(
   wrap(p.title, y, 38, 2);
   ctx.font = "25px system-ui, sans-serif";
   ctx.fillStyle = "#555555";
-  ctx.fillText(`${p.author} · ${place.name}`, 58, c.height - 85, 964);
+  ctx.fillText(`${p.author} · ${t(place.name)}`, 58, c.height - 85, 964);
   ctx.font = "21px system-ui, sans-serif";
   ctx.fillText("keff.uk/lecorbusier", 58, c.height - 43);
   ctx.font = "16px system-ui, sans-serif";
   ctx.fillText(
-    `Photo : ${place.author} · ${place.license} · image modifiée`,
+    `${t("Photo :")} ${place.author} · ${place.license} · ${t("image modifiée")}`,
     58,
     c.height - 25,
     964,
@@ -70,8 +71,8 @@ export async function preparePostcard(
   const blob = await new Promise<Blob | null>((resolve) =>
     c.toBlob(resolve, "image/png"),
   );
-  if (!blob) throw new Error("L’image n’a pas pu être exportée.");
-  const credit = `${place.author}, ${place.license}. Photo source : ${place.sourceUrl}. Transformation OpenAI.`;
+  if (!blob) throw new Error(t("L’image n’a pas pu être exportée."));
+  const credit = `${place.author}, ${place.license}. ${t("Photo source :")} ${place.sourceUrl}. Transformation OpenAI.`;
   const file = new File(
     [blob],
     `${p.title.replace(/[^a-z0-9àâéèêëîïôùûüç-]/gi, "-").slice(0, 70)}.png`,

@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, LoaderCircle, Share2 } from "lucide-react";
 import { Modal } from "./Modal";
@@ -13,6 +14,7 @@ export function SharePanel({
   place?: Place;
   onClose: () => void;
 }) {
+  const language = useLanguage();
   const [format, setFormat] = useState<"image" | "story">("image"),
     [caption, setCaption] = useState(proposal?.caption || ""),
     [prepared, setPrepared] = useState<{ file: File; credit: string } | null>(
@@ -41,7 +43,7 @@ export function SharePanel({
             setPreview(objectUrl);
           })
           .catch(() => {
-            if (!cancelled) setError("Image indisponible. Réessaie.");
+            if (!cancelled) setError(t("Image indisponible. Réessaie."));
           }),
       180,
     );
@@ -50,7 +52,7 @@ export function SharePanel({
       clearTimeout(timer);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [proposal?.id, place?.id, caption, format]);
+  }, [proposal?.id, proposal?.image, place?.id, caption, format, language]);
   async function share() {
     setError("");
     try {
@@ -62,14 +64,14 @@ export function SharePanel({
         };
         if (prepared && navigator.canShare?.({ files: [prepared.file] })) {
           data.files = [prepared.file];
-          data.text = `${proposal?.author} · ${place?.name}\n${url}\n${prepared.credit}`;
+          data.text = `${proposal?.author} · ${t(place?.name || "")}\n${url}\n${prepared.credit}`;
           delete data.url;
         }
         await navigator.share(data);
       } else await copy();
     } catch (e) {
       if ((e as Error).name !== "AbortError")
-        setError("Partage indisponible. Copie le lien.");
+        setError(t("Partage indisponible. Copie le lien."));
     }
   }
   async function copy() {
@@ -77,7 +79,7 @@ export function SharePanel({
       await navigator.clipboard.writeText(url);
       setCopied(true);
     } catch {
-      setError("Copie impossible. Utilise un bouton de partage.");
+      setError(t("Copie impossible. Utilise un bouton de partage."));
     }
   }
   function save() {
@@ -91,7 +93,7 @@ export function SharePanel({
   }
   return (
     <Modal
-      title={proposal ? "Partager la création" : "Partager l'app"}
+      title={proposal ? t("Partager la création") : t("Partager l'app")}
       onClose={onClose}
       className="share-modal"
     >
@@ -100,19 +102,19 @@ export function SharePanel({
           <div
             className="segmented"
             role="group"
-            aria-label="Format de partage"
+            aria-label={t("Format de partage")}
           >
             <button
               aria-pressed={format === "image"}
               onClick={() => setFormat("image")}
             >
-              Image
+              {t("Image")}
             </button>
             <button
               aria-pressed={format === "story"}
               onClick={() => setFormat("story")}
             >
-              Story
+              {t("Story")}
             </button>
           </div>
           <div className="share-preview">
@@ -124,19 +126,19 @@ export function SharePanel({
           </div>
           {format === "story" && (
             <textarea
-              aria-label="Légende de la story"
+              aria-label={t("Légende de la story")}
               rows={2}
               maxLength={160}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Ta légende"
+              placeholder={t("Ta légende")}
             />
           )}
         </>
       )}
       {error && (
         <div className="error-message" role="alert">
-          {error}
+          {t(error)}
         </div>
       )}
       <div className="share-actions">
@@ -147,16 +149,16 @@ export function SharePanel({
         >
           <Share2 size={19} />
           {typeof navigator.share === "function"
-            ? "Partager"
-            : "Copier le lien"}
+            ? t("Partager")
+            : t("Copier le lien")}
         </button>
         <div className="share-links">
           <button
-            aria-label={copied ? "Lien copié" : "Copier le lien"}
+            aria-label={copied ? t("Lien copié") : t("Copier le lien")}
             onClick={() => void copy()}
           >
             <span>{copied ? <Check size={21} /> : <Copy size={21} />}</span>
-            {copied ? "Copié" : "Lien"}
+            {copied ? t("Copié") : t("Lien")}
           </button>
           <a
             href={`https://wa.me/?text=${encodeURIComponent((proposal?.title || "Le Corbusier") + " " + url)}`}
@@ -179,11 +181,11 @@ export function SharePanel({
             X
           </a>
           {prepared && (
-            <button aria-label="Enregistrer l’image" onClick={save}>
+            <button aria-label={t("Enregistrer l’image")} onClick={save}>
               <span>
                 <Download size={21} />
               </span>
-              Enregistrer
+              {t("Enregistrer")}
             </button>
           )}
         </div>

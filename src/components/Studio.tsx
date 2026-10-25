@@ -1,3 +1,4 @@
+import { t, getLanguage } from "../i18n";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -96,6 +97,7 @@ export function Studio({
       const r = await api<{ instructions: string }>("/suggest", {
         placeId: place.id,
         location: draft.location,
+        language: getLanguage(),
         styleId: draft.styleId,
         instructions: draft.instructions,
       });
@@ -108,33 +110,33 @@ export function Studio({
   }
   return (
     <Sheet
-      label={step === 0 ? "Architecture" : "Nommer la création"}
+      label={step === 0 ? t("Architecture") : t("Nommer la création")}
       kind="studio-sheet"
       onClose={onBack}
     >
       <header className="sheet-header">
         <button
           className="icon-button"
-          aria-label="Retour"
+          aria-label={t("Retour")}
           onClick={() => (step ? history.back() : onBack())}
         >
           <ArrowLeft size={21} />
         </button>
         <div className="sheet-heading">
-          <h1>{step === 0 ? "Architecture" : "Nommer"}</h1>
-          <span>{place.name}</span>
+          <h1>{step === 0 ? t("Architecture") : t("Nommer")}</h1>
+          <span>{t(place.name)}</span>
         </div>
         <span
           role="img"
           className="step-dots"
-          aria-label={`Étape ${step + 1} sur 2`}
+          aria-label={t("Étape {n} sur 2", { n: step + 1 })}
         >
           <i className="done" />
           <i className={step ? "done" : ""} />
         </span>
         <button
           className="icon-button"
-          aria-label="Fermer la création"
+          aria-label={t("Fermer la création")}
           onClick={onBack}
         >
           <X size={20} />
@@ -166,7 +168,7 @@ export function Studio({
               <div
                 className="style-options"
                 role="group"
-                aria-label="Style architectural"
+                aria-label={t("Style architectural")}
               >
                 {config.styles.map((s) => (
                   <button
@@ -182,18 +184,18 @@ export function Studio({
                         <Check size={14} className="style-check" />
                       )}
                     </span>
-                    <span>{s.name}</span>
+                    <span>{t(s.name)}</span>
                   </button>
                 ))}
               </div>
               <div className="field-label">
-                <label htmlFor="instructions">Une idée ?</label>
+                <label htmlFor="instructions">{t("Une idée ?")}</label>
                 <button
                   type="button"
                   className="text-button"
                   onClick={() => void suggest()}
                   disabled={suggesting}
-                  aria-label="Proposer une idée"
+                  aria-label={t("Proposer une idée")}
                 >
                   {suggesting ? (
                     <LoaderCircle className="spin" size={18} />
@@ -209,11 +211,11 @@ export function Studio({
                 maxLength={1800}
                 value={draft.instructions}
                 onChange={(e) => change("instructions", e.target.value)}
-                placeholder="Serveurs sous verre, toit en zinc..."
+                placeholder={t("Serveurs sous verre, toit en zinc...")}
               />
               {suggestionError && (
                 <div className="error-message" role="alert">
-                  {suggestionError}
+                  {t(suggestionError)}
                 </div>
               )}
             </>
@@ -222,19 +224,24 @@ export function Studio({
               <div className="signature-place">
                 <img src={place.image} alt="" />
                 <span>
-                  {config.styles.find((s) => s.id === draft.styleId)?.name}
+                  {t(
+                    config.styles.find((s) => s.id === draft.styleId)?.name ||
+                      "",
+                  )}
                 </span>
               </div>
               <div className="field-label">
-                <label htmlFor="creation-title">Nom du data center</label>
+                <label htmlFor="creation-title">
+                  {t("Nom du data center")}
+                </label>
                 <button
                   type="button"
                   className="text-button"
-                  aria-label="Proposer un nom"
+                  aria-label={t("Proposer un nom")}
                   onClick={() =>
                     change(
                       "title",
-                      names[Math.floor(Math.random() * names.length)],
+                      t(names[Math.floor(Math.random() * names.length)]),
                     )
                   }
                 >
@@ -250,9 +257,9 @@ export function Studio({
                 maxLength={90}
                 value={draft.title}
                 onChange={(e) => change("title", e.target.value)}
-                placeholder="Notre-Dame du GPU"
+                placeholder={t("Notre-Dame du GPU")}
               />
-              <label htmlFor="author-name">Ton pseudo</label>
+              <label htmlFor="author-name">{t("Ton pseudo")}</label>
               <input
                 id="author-name"
                 name="nickname"
@@ -268,7 +275,7 @@ export function Studio({
           )}
           {error && (
             <div className="error-message" role="alert">
-              {error}
+              {t(error)}
             </div>
           )}
         </div>
@@ -281,7 +288,7 @@ export function Studio({
             ) : (
               <ArrowRight size={19} />
             )}{" "}
-            {busy ? "Création..." : step ? "Construire" : "Continuer"}
+            {busy ? t("Création...") : step ? t("Construire") : t("Continuer")}
           </button>
         </footer>
       </form>

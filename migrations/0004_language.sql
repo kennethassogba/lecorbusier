@@ -1,0 +1,1 @@
+ALTER TABLE proposals ADD COLUMN language TEXT NOT NULL DEFAULT 'fr';

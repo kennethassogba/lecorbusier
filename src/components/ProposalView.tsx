@@ -1,3 +1,4 @@
+import { t, getLanguage } from "../i18n";
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -53,7 +54,7 @@ export function ProposalView({
   const img = (
     <img
       src={before || !p.image ? place.image : p.image}
-      alt={before || !p.image ? place.name : p.title}
+      alt={before || !p.image ? t(place.name) : p.title}
       draggable={false}
     />
   );
@@ -63,7 +64,7 @@ export function ProposalView({
         <header className="sheet-header">
           <button
             className="icon-button"
-            aria-label="Retour à la carte"
+            aria-label={t("Retour à la carte")}
             onClick={onBack}
           >
             <ArrowLeft size={21} />
@@ -71,12 +72,12 @@ export function ProposalView({
           <div className="sheet-heading">
             <h1>{p.title}</h1>
             <span>
-              {p.author} · {place.name}
+              {p.author} · {t(place.name)}
             </span>
           </div>
           <button
             className="icon-button"
-            aria-label="Fermer la création"
+            aria-label={t("Fermer la création")}
             onClick={onBack}
           >
             <X size={20} />
@@ -88,7 +89,7 @@ export function ProposalView({
               className="photo-open"
               disabled={!p.image}
               onClick={() => setFullscreen(true)}
-              aria-label="Agrandir la création"
+              aria-label={t("Agrandir la création")}
             >
               {img}
             </button>
@@ -96,7 +97,7 @@ export function ProposalView({
               <>
                 <button
                   className="photo-expand"
-                  aria-label="Agrandir la création"
+                  aria-label={t("Agrandir la création")}
                   onClick={() => setFullscreen(true)}
                 >
                   <Maximize2 size={18} />
@@ -104,16 +105,16 @@ export function ProposalView({
                 <div
                   className="comparison"
                   role="group"
-                  aria-label="Avant et après"
+                  aria-label={t("Avant et après")}
                 >
                   <button aria-pressed={before} onClick={() => setBefore(true)}>
-                    Avant
+                    {t("Avant")}
                   </button>
                   <button
                     aria-pressed={!before}
                     onClick={() => setBefore(false)}
                   >
-                    Après
+                    {t("Après")}
                   </button>
                 </div>
               </>
@@ -123,25 +124,25 @@ export function ProposalView({
                 <LoaderCircle className="spin" size={24} />
                 <span>
                   {p.status === "generating"
-                    ? "Construction..."
+                    ? t("Construction...")
                     : p.status === "planning"
-                      ? "Préparation..."
-                      : "En attente..."}
+                      ? t("Préparation...")
+                      : t("En attente...")}
                 </span>
               </div>
             )}
           </div>
           {p.status === "failed" && (
             <div className="error-message" role="alert">
-              {p.error || "Création interrompue."}
+              {t(p.error || "Création interrompue.")}
               <button className="text-button" onClick={onRemix}>
-                Réessayer
+                {t("Réessayer")}
               </button>
             </div>
           )}
           {(error || localError) && (
             <div className="error-message" role="alert">
-              {localError || error}
+              {t(localError || error)}
             </div>
           )}
           <PhotoCredit place={place} adapted={!!p.image} />
@@ -150,7 +151,7 @@ export function ProposalView({
           {p.published_at && (
             <button
               className={`vote-button ${voted ? "voted" : ""}`}
-              aria-label={voted ? "Retirer mon vote" : "Voter"}
+              aria-label={voted ? t("Retirer mon vote") : t("Voter")}
               aria-pressed={voted}
               disabled={busy}
               onClick={() => void action(() => onVote(p))}
@@ -158,29 +159,21 @@ export function ProposalView({
               <Heart size={21} fill={voted ? "currentColor" : "none"} />
               <span>
                 {(p.votes + (p.demo_votes || 0))
-                  .toLocaleString("fr-FR")
+                  .toLocaleString(getLanguage() === "fr" ? "fr-FR" : "en-GB")
                   .replace(/\u202f|\u00a0/g, " ")}
-                {!!p.is_demo && (
-                  <small
-                    className="demo-score"
-                    title={`${p.demo_votes || 0} votes de démonstration · ${p.votes} votes réels`}
-                  >
-                    démo
-                  </small>
-                )}
               </span>
             </button>
           )}
           {generating ? (
             <button className="secondary-button" onClick={onBack}>
-              Explorer Paris
+              {t("Explorer Paris")}
               <ArrowUpRight size={18} />
             </button>
           ) : p.status === "ready" ? (
             <>
               <button
                 className="icon-button remix-button"
-                aria-label="Créer une variante"
+                aria-label={t("Créer une variante")}
                 onClick={onRemix}
               >
                 <RotateCcw size={21} />
@@ -199,12 +192,12 @@ export function ProposalView({
                 ) : (
                   <ArrowUpRight size={19} />
                 )}{" "}
-                {p.published_at ? "Partager" : "Ajouter à Paris"}
+                {p.published_at ? t("Partager") : t("Ajouter à Paris")}
               </button>
             </>
           ) : (
             <button className="primary-button" onClick={onRemix}>
-              Réessayer
+              {t("Réessayer")}
             </button>
           )}
         </footer>
@@ -228,7 +221,7 @@ export function ProposalView({
               className="secondary-button"
               onClick={() => setBefore(!before)}
             >
-              {before ? "Après" : "Avant"}
+              {before ? t("Après") : t("Avant")}
             </button>
             {p.published_at && (
               <button
@@ -239,7 +232,7 @@ export function ProposalView({
                 }}
               >
                 <Share2 size={18} />
-                Partager
+                {t("Partager")}
               </button>
             )}
           </div>

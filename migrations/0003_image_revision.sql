@@ -1,0 +1,1 @@
+ALTER TABLE proposals ADD COLUMN image_revision INTEGER NOT NULL DEFAULT 1;

@@ -3,9 +3,12 @@
 // Session data stays in ignored output/ and is never committed.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 const root = "https://keff.uk/lecorbusier";
-const examples = JSON.parse(await readFile("data/examples.json", "utf8"));
-await mkdir("output/examples", { recursive: true });
-const stateFile = "output/examples/session.json";
+const examples = JSON.parse(
+  await readFile(process.env.EXAMPLES_MANIFEST || "data/examples.json", "utf8"),
+);
+const directory = process.env.EXAMPLES_OUTPUT || "output/examples";
+await mkdir(directory, { recursive: true });
+const stateFile = `${directory}/session.json`;
 let state;
 try {
   state = JSON.parse(await readFile(stateFile, "utf8"));
@@ -69,7 +72,7 @@ if (process.argv[2] === "generate") {
           });
           if (!r.ok) throw new Error("Image download failed");
           await writeFile(
-            `output/examples/${name}.jpg`,
+            `${directory}/${name}.jpg`,
             Buffer.from(await r.arrayBuffer()),
           );
         }

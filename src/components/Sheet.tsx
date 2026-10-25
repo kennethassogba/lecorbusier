@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -35,7 +36,9 @@ export function Sheet({
     >
       <button
         className="sheet-handle"
-        aria-label={collapsed ? "Déplier le panneau" : "Réduire le panneau"}
+        aria-label={
+          collapsed ? t("Déplier le panneau") : t("Réduire le panneau")
+        }
         aria-expanded={!collapsed}
         onPointerDown={(e) => {
           start.current = e.clientY;

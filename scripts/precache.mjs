@@ -5,7 +5,7 @@ const assets = (await readdir(root + "/assets"))
   .filter((f) => /\.(js|css)$/.test(f))
   .map((f) => "/lecorbusier/assets/" + f);
 const metadata = await Promise.all(
-  ["index.html", "manifest.webmanifest", "paris-map.json", "sw.js"].map((f) =>
+  ["index.html", "manifest.webmanifest", "manifest-en.webmanifest", "paris-map.json", "sw.js"].map((f) =>
     readFile(root + "/" + f, "utf8"),
   ),
 );

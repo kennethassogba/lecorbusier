@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import type { Place } from "../types";
 export function PhotoCredit({
   place,
@@ -8,7 +9,7 @@ export function PhotoCredit({
 }) {
   return (
     <details className="photo-credit">
-      <summary>Crédits</summary>
+      <summary>{t("Crédits")}</summary>
       <div>
         <a href={place.sourceUrl} target="_blank" rel="noreferrer">
           {place.author}
@@ -21,7 +22,7 @@ export function PhotoCredit({
         >
           {place.license}
         </a>
-        {adapted ? " · Image modifiée" : ""}
+        {adapted ? t(" · Image modifiée") : ""}
       </div>
     </details>
   );

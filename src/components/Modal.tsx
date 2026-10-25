@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 export function Modal({
@@ -47,7 +48,11 @@ export function Modal({
     >
       <header className="sheet-header">
         <h2>{title}</h2>
-        <button className="icon-button" aria-label="Fermer" onClick={onClose}>
+        <button
+          className="icon-button"
+          aria-label={t("Fermer")}
+          onClick={onClose}
+        >
           <X size={21} />
         </button>
       </header>

@@ -1,3 +1,4 @@
+import { t, useLanguage, setLanguage } from "./i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
@@ -47,6 +48,7 @@ const normalize = (s: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 export default function App() {
+  const language = useLanguage();
   const [config, setConfig] = useState<Config>(initialConfig),
     [draft, setDraftState] = useState<Draft>(() => ({
       ...defaultDraft,
@@ -181,7 +183,7 @@ export default function App() {
           : own.proposals,
       );
       setVotes(own.votes);
-      setError((old) => (old === "Connexion perdue. Réessaie." ? "" : old));
+      setError((old) => (old === t("Connexion perdue. Réessaie.") ? "" : old));
       if (known.current) {
         const ready = own.proposals.find(
           (p) =>
@@ -209,7 +211,7 @@ export default function App() {
           : null,
       );
     } catch {
-      setError("Connexion perdue. Réessaie.");
+      setError(t("Connexion perdue. Réessaie."));
     } finally {
       refreshing.current = false;
       setLoading(false);
@@ -261,7 +263,7 @@ export default function App() {
             p.place || placesRef.current.find((l) => l.id === p.place_id);
           if (loc) mapControl.current?.focus(loc);
         })
-        .catch(() => setError("Création introuvable. Reviens à la carte."));
+        .catch(() => setError(t("Création introuvable. Reviens à la carte.")));
     const shortcut = new URLSearchParams(location.search).get("view");
     if (shortcut === "mine" || shortcut === "top") {
       setFilter(shortcut);
@@ -549,7 +551,7 @@ export default function App() {
     const requestId = crypto.randomUUID();
     saveLocal("lc-active", requestId);
     try {
-      await api("/generate", { ...draft, requestId });
+      await api("/generate", { ...draft, requestId, language });
       const p = await api<Proposal>("/proposals/" + requestId);
       open(p);
       void refresh();
@@ -646,21 +648,14 @@ export default function App() {
         <span className="creation-card-info">
           <strong>{p.title}</strong>
           <span className="builder-name">{p.author}</span>
-          <span>{loc?.name}</span>
+          <span>{t(loc?.name || "")}</span>
         </span>
         {p.published_at ? (
           <span className="card-votes">
             <Heart size={14} />
             {(p.votes + (p.demo_votes || 0))
-              .toLocaleString("fr-FR")
+              .toLocaleString(language === "fr" ? "fr-FR" : "en-GB")
               .replace(/\u202f|\u00a0/g, " ")}
-            {!!p.is_demo && (
-              <small
-                title={`${p.demo_votes || 0} votes de démonstration · ${p.votes} votes réels`}
-              >
-                démo
-              </small>
-            )}
           </span>
         ) : (
           <span className="card-status">
@@ -704,8 +699,8 @@ export default function App() {
           <Search size={20} aria-hidden="true" />
           <input
             type="search"
-            aria-label="Rechercher à Paris"
-            placeholder="Lieu ou adresse à Paris"
+            aria-label={t("Rechercher à Paris")}
+            placeholder={t("Lieu ou adresse à Paris")}
             value={query}
             onFocus={() => {
               locationRequest.current++;
@@ -723,41 +718,44 @@ export default function App() {
           />
           <button
             className="icon-button"
-            aria-label="Partager l'app"
+            aria-label={t("Partager l'app")}
             onClick={() => void share()}
           >
             <Share2 size={20} />
           </button>
           <button
             className="icon-button"
-            aria-label="Menu de l'app"
+            aria-label={t("Menu de l'app")}
             onClick={() => setMenu(true)}
           >
             <MoreHorizontal size={22} />
           </button>
         </div>
-        <nav className="map-filters" aria-label="Créations sur la carte">
+        <nav className="map-filters" aria-label={t("Créations sur la carte")}>
           <button
             aria-pressed={filter === "all"}
             onClick={() => collection("all")}
           >
-            Tout
+            {t("Tout")}
           </button>
           <button
             aria-pressed={filter === "top"}
             onClick={() => collection("top")}
           >
             <Trophy size={15} />
-            Top
+            {t("Top")}
           </button>
           <button
             aria-pressed={filter === "mine"}
             onClick={() => collection("mine")}
           >
             <UserRound size={15} />
-            Les miens
+            {t("Les miens")}
             {mine.some((p) => !p.published_at) && (
-              <span className="pending-dot" aria-label="Créations en cours" />
+              <span
+                className="pending-dot"
+                aria-label={t("Créations en cours")}
+              />
             )}
           </button>
         </nav>
@@ -769,13 +767,14 @@ export default function App() {
       )}
       {locating && !building && (
         <div className="location-status" role="status">
-          <LoaderCircle className="spin" size={18} /> Localisation...
+          <LoaderCircle className="spin" size={18} />
+          {t("Localisation...")}
         </div>
       )}
       {!online && (
         <div className="network-state" role="status">
           <WifiOff size={15} />
-          Hors ligne
+          {t("Hors ligne")}
         </div>
       )}
       {panel === "none" && (
@@ -795,11 +794,11 @@ export default function App() {
                 ) : (
                   <Plus size={20} />
                 )}{" "}
-                Construire ici
+                {t("Construire ici")}
               </button>
               <button
                 className="icon-button"
-                aria-label="Annuler"
+                aria-label={t("Annuler")}
                 onClick={close}
               >
                 <X size={20} />
@@ -809,10 +808,13 @@ export default function App() {
             <div className="explore-bottom">
               <button className="build-button" onClick={add}>
                 <Plus size={24} />
-                Construire
+                {t("Construire")}
               </button>
               {visible.length > 0 && (
-                <div className="discovery-rail" aria-label="Créations récentes">
+                <div
+                  className="discovery-rail"
+                  aria-label={t("Créations récentes")}
+                >
                   {visible.slice(0, 30).map((p) => card(p))}
                 </div>
               )}
@@ -821,22 +823,22 @@ export default function App() {
         </>
       )}
       {panel === "place" && (
-        <Sheet label={place.name} kind="place-sheet" onClose={close}>
+        <Sheet label={t(place.name)} kind="place-sheet" onClose={close}>
           <div className="place-heading">
             <button
               className="place-photo"
-              aria-label={`Voir ${place.name}`}
+              aria-label={t("Voir {lieu}", { lieu: t(place.name) })}
               onClick={() => setPreviewPlace(place)}
             >
               <img src={place.image} alt="" />
             </button>
             <div>
-              <h1>{place.name}</h1>
-              <span>{place.arrondissement} · Paris</span>
+              <h1>{t(place.name)}</h1>
+              <span>{t(place.arrondissement)} · Paris</span>
             </div>
             <button
               className="icon-button"
-              aria-label="Fermer le lieu"
+              aria-label={t("Fermer le lieu")}
               onClick={close}
             >
               <X size={20} />
@@ -864,7 +866,7 @@ export default function App() {
               disabled={!online || !config.generationAvailable}
             >
               <Plus size={20} />
-              Construire ici
+              {t("Construire ici")}
             </button>
             {online && !config.generationAvailable && (
               <button
@@ -872,10 +874,10 @@ export default function App() {
                 onClick={() =>
                   void api<Config>("/config")
                     .then(setConfig)
-                    .catch(() => setError("Connexion perdue. Réessaie."))
+                    .catch(() => setError(t("Connexion perdue. Réessaie.")))
                 }
               >
-                {loading ? "Connexion..." : "Réessayer"}
+                {loading ? t("Connexion...") : t("Réessayer")}
               </button>
             )}
           </footer>
@@ -917,10 +919,10 @@ export default function App() {
           autoFocus={false}
         >
           <header className="sheet-header">
-            <h1>Lieux</h1>
+            <h1>{t("Lieux")}</h1>
             <button
               className="icon-button"
-              aria-label="Fermer la recherche"
+              aria-label={t("Fermer la recherche")}
               onClick={close}
             >
               <X size={20} />
@@ -937,9 +939,9 @@ export default function App() {
                 .map((p) => card(p))}
             {config.places
               .filter((p) =>
-                normalize(p.name + " " + p.arrondissement).includes(
-                  normalize(query),
-                ),
+                normalize(
+                  p.name + " " + t(p.name) + " " + p.arrondissement,
+                ).includes(normalize(query)),
               )
               .map((p) => (
                 <button
@@ -949,8 +951,8 @@ export default function App() {
                 >
                   <img src={p.image} alt="" loading="lazy" />
                   <span>
-                    <strong>{p.name}</strong>
-                    <small>{p.arrondissement}</small>
+                    <strong>{t(p.name)}</strong>
+                    <small>{t(p.arrondissement)}</small>
                   </span>
                   <ChevronRight size={18} />
                 </button>
@@ -972,22 +974,23 @@ export default function App() {
                     <Search size={20} />
                   </span>
                   <span>
-                    <strong>{p.name}</strong>
-                    <small>Paris</small>
+                    <strong>{t(p.name)}</strong>
+                    <small>{t("Paris")}</small>
                   </span>
                   <ChevronRight size={18} />
                 </button>
               ))}
             {searching && (
               <div className="search-status" role="status">
-                <LoaderCircle className="spin" size={18} /> Recherche...
+                <LoaderCircle className="spin" size={18} />
+                {t("Recherche...")}
               </div>
             )}
             {searchError && (
               <div className="error-message" role="alert">
-                {searchError}
+                {t(searchError)}
                 <button className="text-button" onClick={add}>
-                  Choisir sur la carte
+                  {t("Choisir sur la carte")}
                 </button>
               </div>
             )}
@@ -996,15 +999,15 @@ export default function App() {
               !searchError &&
               !searchResults.length &&
               !config.places.some((p) =>
-                normalize(p.name).includes(normalize(query)),
+                normalize(p.name + " " + t(p.name)).includes(normalize(query)),
               ) &&
               !proposals.some((p) =>
                 normalize(p.title + " " + p.author).includes(normalize(query)),
               ) && (
                 <div className="empty-state">
-                  <span>Aucun résultat dans Paris</span>
+                  <span>{t("Aucun résultat dans Paris")}</span>
                   <button className="text-button" onClick={add}>
-                    Choisir sur la carte
+                    {t("Choisir sur la carte")}
                   </button>
                 </div>
               )}
@@ -1013,15 +1016,15 @@ export default function App() {
       )}
       {panel === "collection" && (
         <Sheet
-          label={filter === "top" ? "Top" : "Mes créations"}
+          label={filter === "top" ? t("Top") : t("Mes créations")}
           kind="collection-sheet"
           onClose={close}
         >
           <header className="sheet-header">
-            <h1>{filter === "top" ? "Top" : "Mes créations"}</h1>
+            <h1>{filter === "top" ? t("Top") : t("Mes créations")}</h1>
             <button
               className="icon-button"
-              aria-label="Fermer la liste"
+              aria-label={t("Fermer la liste")}
               onClick={close}
             >
               <X size={20} />
@@ -1031,10 +1034,12 @@ export default function App() {
             {visible.map((p, i) => card(p, filter === "top" ? i : undefined))}
             {!visible.length && (
               <div className="empty-state">
-                <span>{loading ? "Chargement..." : "Aucune création"}</span>
+                <span>
+                  {loading ? t("Chargement...") : t("Aucune création")}
+                </span>
                 <button className="primary-button" onClick={add}>
                   <Plus size={19} />
-                  Construire
+                  {t("Construire")}
                 </button>
               </div>
             )}
@@ -1044,13 +1049,13 @@ export default function App() {
       {notice && panel !== "proposal" && (
         <button className="ready-notice" onClick={() => open(notice)}>
           <img src={notice.image} alt="" />
-          Création prête
+          {t("Création prête")}
           <ArrowUpRight size={18} />
         </button>
       )}
       {error && !["studio", "proposal"].includes(panel) && (
         <div className="connection-error" role="alert">
-          <span>{error}</span>
+          <span>{t(error)}</span>
           <button
             className="text-button"
             onClick={() => {
@@ -1058,11 +1063,11 @@ export default function App() {
               void refresh();
             }}
           >
-            Réessayer
+            {t("Réessayer")}
           </button>
           <button
             className="icon-button"
-            aria-label="Fermer l'erreur"
+            aria-label={t("Fermer l'erreur")}
             onClick={() => setError("")}
           >
             <X size={18} />
@@ -1075,10 +1080,30 @@ export default function App() {
           onClose={() => setMenu(false)}
           className="app-menu"
         >
+          <div
+            className="language-switch"
+            role="group"
+            aria-label="Language / Langue"
+          >
+            <button
+              aria-label="Français"
+              aria-pressed={language === "fr"}
+              onClick={() => setLanguage("fr")}
+            >
+              FR
+            </button>
+            <button
+              aria-label="English"
+              aria-pressed={language === "en"}
+              onClick={() => setLanguage("en")}
+            >
+              EN
+            </button>
+          </div>
           {!installed && (
             <button className="menu-row" onClick={() => void installApp()}>
               <Smartphone size={22} />
-              <strong>Installer l'app</strong>
+              <strong>{t("Installer l'app")}</strong>
               <ChevronRight size={18} />
             </button>
           )}
@@ -1090,7 +1115,7 @@ export default function App() {
             }}
           >
             <Share2 size={22} />
-            <strong>Partager l'app</strong>
+            <strong>{t("Partager l'app")}</strong>
             <ChevronRight size={18} />
           </button>
           <a
@@ -1099,14 +1124,14 @@ export default function App() {
             target="_blank"
             rel="noreferrer"
           >
-            <span>Code source</span>
+            <span>{t("Code source")}</span>
             <ArrowUpRight size={18} />
           </a>
           <details className="app-credits">
-            <summary>Crédits</summary>
+            <summary>{t("Crédits")}</summary>
             {config.places.map((p) => (
               <div key={p.id}>
-                <strong>{p.name}</strong>
+                <strong>{t(p.name)}</strong>
                 <PhotoCredit place={p} />
               </div>
             ))}
@@ -1115,7 +1140,7 @@ export default function App() {
       )}
       {installHelp && (
         <Modal
-          title="Installer l'app"
+          title={t("Installer l'app")}
           onClose={() => setInstallHelp(false)}
           className="install-modal"
         >
@@ -1127,22 +1152,22 @@ export default function App() {
               <>
                 <li>
                   <Share2 size={24} />
-                  <span>Partager</span>
+                  <span>{t("Partager")}</span>
                 </li>
                 <li>
                   <Plus size={24} />
-                  <span>Sur l'écran d'accueil</span>
+                  <span>{t("Sur l'écran d'accueil")}</span>
                 </li>
               </>
             ) : (
               <>
                 <li>
                   <MoreHorizontal size={24} />
-                  <span>Menu du navigateur</span>
+                  <span>{t("Menu du navigateur")}</span>
                 </li>
                 <li>
                   <Download size={24} />
-                  <span>Installer l'application</span>
+                  <span>{t("Installer l'application")}</span>
                 </li>
               </>
             )}
@@ -1151,7 +1176,7 @@ export default function App() {
             className="primary-button"
             onClick={() => setInstallHelp(false)}
           >
-            Fermer
+            {t("Fermer")}
           </button>
         </Modal>
       )}
@@ -1170,5 +1195,5 @@ export default function App() {
   );
 }
 function RotateIcon() {
-  return <span aria-label="Création à reprendre">!</span>;
+  return <span aria-label={t("Création à reprendre")}>!</span>;
 }

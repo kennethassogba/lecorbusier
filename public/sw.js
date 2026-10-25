@@ -11,6 +11,7 @@ self.addEventListener("install", (event) => {
         cache.addAll([
           BASE,
           BASE + "manifest.webmanifest",
+          BASE + "manifest-en.webmanifest",
           BASE + "icon-192.png",
           BASE + "paris-map.json",
           BASE + "places/gare-de-lyon.jpg",

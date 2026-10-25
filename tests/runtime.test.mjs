@@ -43,7 +43,12 @@ test(
       const db = await mf.getD1Database("DB");
       const schema = (
         await Promise.all(
-          ["0001_initial.sql", "0002_free_places_and_demo.sql"].map((name) =>
+          [
+            "0001_initial.sql",
+            "0002_free_places_and_demo.sql",
+            "0003_image_revision.sql",
+            "0004_language.sql",
+          ].map((name) =>
             readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
           ),
         )
@@ -219,7 +224,9 @@ test(
             });
           if (path === "/v1/moderations")
             return Response.json({ results: [{ flagged: false }] });
-          if (path === "/v1/responses")
+          if (path === "/v1/responses") {
+            const body = await request.json();
+            assert.match(body.instructions, /in English/);
             return Response.json({
               output: [
                 {
@@ -235,6 +242,7 @@ test(
                 },
               ],
             });
+          }
           if (path === "/v1/images/edits") {
             const form = await request.formData();
             assert.equal(form.get("model"), "image-test");
@@ -253,7 +261,12 @@ test(
       const db = await mf.getD1Database("DB");
       const schema = (
         await Promise.all(
-          ["0001_initial.sql", "0002_free_places_and_demo.sql"].map((name) =>
+          [
+            "0001_initial.sql",
+            "0002_free_places_and_demo.sql",
+            "0003_image_revision.sql",
+            "0004_language.sql",
+          ].map((name) =>
             readFile(new URL("../migrations/" + name, import.meta.url), "utf8"),
           ),
         )
@@ -277,6 +290,7 @@ test(
         styleId: "haussmannien",
         author: "Test",
         title: "Pipeline test",
+        language: "en",
         instructions: "Serveurs visibles.",
       };
       const init = {

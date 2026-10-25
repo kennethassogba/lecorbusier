@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 export const BASE = "/lecorbusier";
 export async function api<T>(
   path: string,
@@ -18,9 +19,9 @@ export async function api<T>(
   });
   const data = await response
     .json()
-    .catch(() => ({ error: "Le serveur ne répond pas. Réessaie." }));
+    .catch(() => ({ error: t("Le serveur ne répond pas. Réessaie.") }));
   if (!response.ok)
-    throw new Error(data.error || "Une erreur est survenue. Réessaie.");
+    throw new Error(data.error || t("Une erreur est survenue. Réessaie."));
   return data;
 }
 export function readLocal<T>(key: string, fallback: T): T {

@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../i18n";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   Map,
@@ -37,6 +38,7 @@ export function ParisMap({
   onBlank: (point?: { lng: number; lat: number }) => void;
   control: RefObject<MapControl | null>;
 }) {
+  const language = useLanguage();
   const container = useRef<HTMLDivElement>(null),
     map = useRef<MapInstance | null>(null);
   const markers = useRef<
@@ -68,7 +70,7 @@ export function ParisMap({
         ],
         attributionControl: false,
         locale: {
-          "AttributionControl.ToggleAttribution": "Crédits de la carte",
+          "AttributionControl.ToggleAttribution": t("Crédits de la carte"),
         },
         pitch: 0,
         maxPitch: 65,
@@ -146,7 +148,9 @@ export function ParisMap({
     });
     m.getCanvas().setAttribute(
       "aria-label",
-      "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer, Entrée pour choisir le point central.",
+      t(
+        "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer, Entrée pour choisir le point central.",
+      ),
     );
     const focus = (p: Place) =>
       requestAnimationFrame(() => {
@@ -236,13 +240,23 @@ export function ParisMap({
         ],
       ],
     ]);
+    m.getCanvas().setAttribute(
+      "aria-label",
+      t(
+        "Carte de Paris. Flèches pour déplacer, plus et moins pour zoomer, Entrée pour choisir le point central.",
+      ),
+    );
+    container.current
+      ?.querySelector(".maplibregl-ctrl-attrib summary")
+      ?.setAttribute("aria-label", t("Crédits de la carte"));
     for (const place of places) {
       const items = proposals.filter((p) => p.place_id === place.id);
       const active = selected === place.id;
       const key = JSON.stringify([
         active,
         building,
-        items.map((p) => [p.id, p.title]),
+        language,
+        items.map((p) => [p.id, p.title, p.image]),
       ]);
       const cached = markers.current[place.id];
       if (cached?.key === key) continue;
@@ -259,10 +273,10 @@ export function ParisMap({
       el.setAttribute(
         "aria-label",
         items.length && !building
-          ? `${items[0].title}, ${place.name}${items.length > 1 ? `, ${items.length} créations` : ""}`
-          : `Construire à ${place.name}`,
+          ? `${items[0].title}, ${t(place.name)}${items.length > 1 ? `, ${t("{n} créations", { n: items.length })}` : ""}`
+          : t("Construire à {lieu}", { lieu: t(place.name) }),
       );
-      el.title = place.name;
+      el.title = t(place.name);
       const face = document.createElement("span");
       face.className = "pin-face";
       if (items.length && !building) {
@@ -282,7 +296,7 @@ export function ParisMap({
       if (active || items.length || building) {
         const label = document.createElement("span");
         label.className = "pin-label";
-        label.textContent = place.name;
+        label.textContent = t(place.name);
         el.append(label);
       }
       el.onclick = (e) => {
@@ -313,14 +327,14 @@ export function ParisMap({
         item.marker.remove();
         delete markers.current[id];
       }
-  }, [places, proposals, selected, building, ready]);
+  }, [places, proposals, selected, building, ready, language]);
   return (
     <>
       <div
         ref={container}
         className="paris-map"
         role="region"
-        aria-label="Carte commune de Paris"
+        aria-label={t("Carte commune de Paris")}
       />
       {failed && (
         <button
@@ -330,13 +344,13 @@ export function ParisMap({
             setRetry((n) => n + 1);
           }}
         >
-          Recharger la carte
+          {t("Recharger la carte")}
         </button>
       )}
-      <div className="map-tools" aria-label="Commandes de la carte">
+      <div className="map-tools" aria-label={t("Commandes de la carte")}>
         <button
           className="map-tool"
-          aria-label={threeD ? "Vue 2D" : "Vue 3D"}
+          aria-label={threeD ? t("Vue 2D") : t("Vue 3D")}
           aria-pressed={threeD}
           onClick={() =>
             map.current?.easeTo({
@@ -352,7 +366,7 @@ export function ParisMap({
         </button>
         <button
           className="map-tool"
-          aria-label="Recentrer sur Paris"
+          aria-label={t("Recentrer sur Paris")}
           onClick={() => {
             control.current?.home();
             callbacks.current.onBlank();
@@ -363,7 +377,7 @@ export function ParisMap({
         <div className="zoom-controls">
           <button
             className="map-tool"
-            aria-label="Zoomer"
+            aria-label={t("Zoomer")}
             onClick={() =>
               map.current?.zoomIn({ duration: reduced() ? 0 : 200 })
             }
@@ -372,7 +386,7 @@ export function ParisMap({
           </button>
           <button
             className="map-tool"
-            aria-label="Dézoomer"
+            aria-label={t("Dézoomer")}
             onClick={() =>
               map.current?.zoomOut({ duration: reduced() ? 0 : 200 })
             }
