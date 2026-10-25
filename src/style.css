@@ -1901,6 +1901,7 @@ details[open] > summary:not(.maplibregl-ctrl-attrib-button)::after {
   padding: 20px 20px 4px;
 }
 .welcome-copy h1 {
+  text-wrap: balance;
   font-size: clamp(1.5rem, 6vw, 1.875rem);
   line-height: 1.12;
   letter-spacing: -0.035em;
