@@ -495,7 +495,7 @@ function headers(response, cookie) {
   if (!import.meta.env.DEV)
     h.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tile.openstreetmap.org; connect-src 'self' wss://keff.uk wss://*.workers.dev; font-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://tiles.openfreemap.org; connect-src 'self' https://tiles.openfreemap.org wss://keff.uk wss://*.workers.dev; font-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
     );
   if (cookie) h.append("Set-Cookie", cookie);
   return new Response(response.body, { status: response.status, headers: h });
@@ -617,7 +617,19 @@ export default {
           ? "/index.html"
           : url.pathname.slice(BASE.length);
       assetUrl.pathname = (import.meta.env.DEV ? BASE : "") + relativePath;
-      const response = await env.ASSETS.fetch(new Request(assetUrl, request));
+      let response = await env.ASSETS.fetch(new Request(assetUrl, request));
+      if (url.pathname === BASE + "/" && response.ok) {
+        const html = (await response.text()).replace(
+          "<!-- social -->",
+          `<meta property="og:type" content="website"><meta property="og:title" content="Le Corbusier"><meta property="og:description" content="Construire et partager des data centers dans Paris."><meta property="og:image" content="${url.origin}${BASE}/share-app.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="${url.origin}${BASE}/"><meta name="twitter:card" content="summary_large_image">`,
+        );
+        response = new Response(html, {
+          headers: {
+            "Content-Type": "text/html;charset=utf-8",
+            "Cache-Control": "no-cache",
+          },
+        });
+      }
       const wrapped = headers(response, cookie);
       if (url.pathname.endsWith("/sw.js")) {
         wrapped.headers.set("Cache-Control", "no-cache");
@@ -642,7 +654,7 @@ export default {
           {
             error: validationError
               ? error.message
-              : "Le chantier ne répond pas. Réessaie dans un moment.",
+              : "Connexion impossible. Réessaie.",
           },
           validationError ? 400 : 503,
         ),

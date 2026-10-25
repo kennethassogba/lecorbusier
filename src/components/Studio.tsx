@@ -1,22 +1,65 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
-  Check,
-  ChevronDown,
-  Shuffle,
   ArrowRight,
+  Check,
+  LoaderCircle,
+  Shuffle,
+  X,
 } from "lucide-react";
 import type { Config, Draft, Place } from "../types";
-import { PhotoCredit } from "./PhotoCredit";
 import { api } from "../api";
+import { Sheet } from "./Sheet";
 const names = [
-  "Le Cloud de Paris",
   "Notre-Dame du GPU",
-  "Palais des calculs",
-  "La Maison des prompts",
+  "Le Palais du GPU",
+  "Le Cloud de Paris",
   "Le Brutalisme artificiel",
   "Les Halles du serveur",
 ];
+function Facade({ id }: { id: string }) {
+  const modern = ["brutaliste", "contemporain", "art-deco"].includes(id);
+  return (
+    <svg
+      className={`facade facade-${id}`}
+      viewBox="0 0 96 72"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path d="M10 65h76M19 65V26h58v39" />
+      {id === "art-deco" ? (
+        <path d="M19 26h10V18h12V10h14v8h12v8" />
+      ) : modern ? (
+        <path d="M19 26V14h58v12M19 40h58M48 14v51" />
+      ) : (
+        <path d="M16 26 48 9l32 17ZM23 23h50" />
+      )}
+      {[29, 44, 59].map((x) => (
+        <g key={x}>
+          {["classique", "neoclassique", "neo-classique"].includes(id) ? (
+            <path d={`M${x} 30v28m-3-28h9m-9 28h9`} />
+          ) : (
+            <>
+              <path d={`M${x} 42V32h8v10zM${x} 59V49h8v10z`} />
+              {!modern && <path d={`M${x - 2} 44h12M${x - 2} 61h12`} />}
+            </>
+          )}
+        </g>
+      ))}
+      {["baroque", "rococo", "art-nouveau"].includes(id) && (
+        <path d="M24 26q-8-12 0-10t10 0M72 26q8-12 0-10t-10 0M39 22q9-16 18 0" />
+      )}
+      {id === "haussmannien" && (
+        <path d="M19 25 26 12h44l7 13M33 12V8h5v4M60 12V8h5v4M19 46h58" />
+      )}
+      {id === "gothique" && (
+        <path d="m20 26 7-18 7 18m28 0 7-18 7 18M40 26l8-22 8 22" />
+      )}
+    </svg>
+  );
+}
 export function Studio({
   config,
   place,
@@ -36,10 +79,14 @@ export function Studio({
   busy: boolean;
   error: string;
 }) {
-  const [step, setStep] = useState(2),
-    [all, setAll] = useState(false),
+  const [step, setStep] = useState(history.state?.studioStep || 0),
     [suggesting, setSuggesting] = useState(false),
     [suggestionError, setSuggestionError] = useState("");
+  useEffect(() => {
+    const restore = () => setStep(history.state?.studioStep || 0);
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
   const change = (key: keyof Draft, value: string) =>
     setDraft({ ...draft, [key]: value });
   async function suggest() {
@@ -59,179 +106,199 @@ export function Studio({
     }
   }
   return (
-    <section
-      className="studio page-surface"
-      aria-label="Création d'un data center"
+    <Sheet
+      label={step === 0 ? "Architecture" : "Nommer la création"}
+      kind="studio-sheet"
+      onClose={onBack}
     >
-      <header className="page-header">
+      <header className="sheet-header">
         <button
           className="icon-button"
-          onClick={() => (step === 3 ? setStep(2) : onBack())}
           aria-label="Retour"
+          onClick={() => (step ? history.back() : onBack())}
         >
-          <ArrowLeft />
+          <ArrowLeft size={21} />
         </button>
-        <h1>{step === 2 ? "Architecture" : "Signer les plans"}</h1>
-        <span className="step">{step} / 3</span>
-      </header>
-      <div className="studio-scroll">
-        <div className="reference-photo">
-          <img src={place.image} alt={`Photographie réelle : ${place.name}`} />
-          <span className="photo-label">{place.name}</span>
+        <div className="sheet-heading">
+          <h1>{step === 0 ? "Architecture" : "Nommer"}</h1>
+          <span>{place.name}</span>
         </div>
-        <div className="studio-fields">
-          {step === 2 ? (
+        <span
+          role="img"
+          className="step-dots"
+          aria-label={`Étape ${step + 1} sur 2`}
+        >
+          <i className="done" />
+          <i className={step ? "done" : ""} />
+        </span>
+        <button
+          className="icon-button"
+          aria-label="Fermer la création"
+          onClick={onBack}
+        >
+          <X size={20} />
+        </button>
+      </header>
+      <form
+        className="studio-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!step) {
+            history.pushState(
+              {
+                ...history.state,
+                lc: {
+                  ...history.state?.lc,
+                  depth: (history.state?.lc?.depth || 0) + 1,
+                },
+                studioStep: 1,
+              },
+              "",
+            );
+            setStep(1);
+          } else onGenerate();
+        }}
+      >
+        <div className="sheet-scroll">
+          {step === 0 ? (
             <>
-              <div className="section-heading">
-                <h2>À ta façon.</h2>
-                <button
-                  className="text-button"
-                  onClick={() => setAll(!all)}
-                  aria-expanded={all}
-                >
-                  {all ? "Réduire" : "Tous les styles"}
-                  <ChevronDown size={15} />
-                </button>
-              </div>
               <div
-                className={`style-options ${all ? "expanded" : ""}`}
+                className="style-options"
                 role="group"
                 aria-label="Style architectural"
               >
-                {config.styles.slice(0, all ? undefined : 3).map((s) => (
+                {config.styles.map((s) => (
                   <button
+                    type="button"
                     key={s.id}
-                    className={`style-option ${draft.styleId === s.id ? "active" : ""}`}
-                    aria-pressed={draft.styleId === s.id}
+                    className={`style-option ${s.id === draft.styleId ? "active" : ""}`}
+                    aria-pressed={s.id === draft.styleId}
                     onClick={() => change("styleId", s.id)}
                   >
-                    <span
-                      className={`facade facade-${s.id}`}
-                      aria-hidden="true"
-                    >
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                      {draft.styleId === s.id && (
-                        <span className="style-check">
-                          <Check size={12} />
-                        </span>
+                    <span className="style-drawing">
+                      <Facade id={s.id} />
+                      {s.id === draft.styleId && (
+                        <Check size={14} className="style-check" />
                       )}
                     </span>
                     <span>{s.name}</span>
                   </button>
                 ))}
               </div>
-              <p className="style-description">
-                {config.styles.find((s) => s.id === draft.styleId)?.detail}
-              </p>
               <div className="field-label">
-                <label htmlFor="instructions">Tes instructions</label>
+                <label htmlFor="instructions">Une idée ?</label>
                 <button
+                  type="button"
                   className="text-button"
-                  disabled={suggesting}
                   onClick={() => void suggest()}
+                  disabled={suggesting}
+                  aria-label="Proposer une idée"
                 >
-                  <Shuffle size={14} />
-                  {suggesting
-                    ? "Recherche..."
-                    : draft.instructions
-                      ? "Préciser mon idée"
-                      : "Une idée"}
+                  {suggesting ? (
+                    <LoaderCircle className="spin" size={18} />
+                  ) : (
+                    <Shuffle size={18} />
+                  )}
                 </button>
               </div>
               <textarea
                 id="instructions"
-                rows={3}
+                name="instructions"
+                rows={2}
                 maxLength={1800}
                 value={draft.instructions}
                 onChange={(e) => change("instructions", e.target.value)}
-                placeholder="Des baies vitrées sur les serveurs ? Un toit qui refroidit tout le quartier ?"
+                placeholder="Serveurs sous verre, toit en zinc..."
               />
               {suggestionError && (
-                <p className="error-message" role="alert">
+                <div className="error-message" role="alert">
                   {suggestionError}
-                </p>
+                </div>
               )}
-              <PhotoCredit place={place} />
             </>
           ) : (
-            <>
-              <h2>Un nom pour ce chantier.</h2>
+            <div className="signature-fields">
+              <div className="signature-place">
+                <img src={place.image} alt="" />
+                <span>
+                  {config.styles.find((s) => s.id === draft.styleId)?.name}
+                </span>
+              </div>
               <div className="field-label">
-                <label htmlFor="creation-title">Nom de ta création</label>
+                <label htmlFor="creation-title">Nom du data center</label>
                 <button
+                  type="button"
                   className="text-button"
+                  aria-label="Proposer un nom"
                   onClick={() =>
                     change(
                       "title",
                       names[Math.floor(Math.random() * names.length)],
                     )
                   }
-                  aria-label="Proposer un nom"
                 >
-                  <Shuffle size={16} />
+                  <Shuffle size={18} />
                 </button>
               </div>
               <input
-                autoFocus
                 id="creation-title"
-                maxLength={90}
+                name="title"
+                autoComplete="off"
+                enterKeyHint="next"
                 required
+                maxLength={90}
                 value={draft.title}
                 onChange={(e) => change("title", e.target.value)}
-                placeholder="Le Palais du GPU"
-                autoComplete="off"
+                placeholder="Notre-Dame du GPU"
               />
-              <label htmlFor="author-name">Ton nom ou pseudo</label>
+              <label htmlFor="author-name">Ton pseudo</label>
               <input
                 id="author-name"
+                name="nickname"
+                autoComplete="nickname"
+                enterKeyHint="go"
                 required
                 maxLength={48}
-                autoComplete="nickname"
                 value={draft.author}
                 onChange={(e) => change("author", e.target.value)}
-                placeholder="Le Corbusier du dimanche"
+                placeholder="Camille"
               />
-              <div className="creation-recap">
-                <span>{place.name}</span>
-                <span>
-                  {config.styles.find((s) => s.id === draft.styleId)?.name}
-                </span>
-              </div>
-              <p className="quiet-note">
-                Ton nom et ta création seront publics après publication. Aucun
-                compte.
-              </p>
-            </>
+            </div>
           )}
           {error && (
-            <p role="alert" className="error-message">
+            <div className="error-message" role="alert">
               {error}
-            </p>
+            </div>
           )}
         </div>
-      </div>
-      <footer className="action-footer">
-        <button
-          className="primary-button"
-          disabled={
-            busy ||
-            (step === 3 && (!draft.author.trim() || !draft.title.trim()))
-          }
-          onClick={() => (step === 2 ? setStep(3) : onGenerate())}
-        >
-          {busy
-            ? "Démarrage..."
-            : step === 2
-              ? "Continuer"
-              : "Dessiner mon data center"}
-          <ArrowRight size={18} />
-        </button>
-      </footer>
-    </section>
+        <footer className="sheet-footer">
+          <button type="submit" className="primary-button" disabled={busy}>
+            {busy ? (
+              <LoaderCircle size={19} className="spin" />
+            ) : step ? (
+              <PlusMark />
+            ) : (
+              <ArrowRight size={19} />
+            )}{" "}
+            {busy ? "Création..." : step ? "Construire" : "Continuer"}
+          </button>
+        </footer>
+      </form>
+    </Sheet>
+  );
+}
+function PlusMark() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path d="M10 3v14M3 10h14" />
+    </svg>
   );
 }

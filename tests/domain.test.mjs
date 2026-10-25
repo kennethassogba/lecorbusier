@@ -100,3 +100,27 @@ test("PWA is scoped to the supplied subpath and has real install icons", async (
       ).size > 100,
     );
 });
+
+test("built PWA precaches its map worker and exposes scoped system shortcuts", async () => {
+  const root = new URL(
+    "../.cloudflare/output/v0/workers/default/assets/",
+    import.meta.url,
+  );
+  const sw = await readFile(new URL("sw.js", root), "utf8");
+  assert.doesNotMatch(sw, /__BUILD__/);
+  const assets = JSON.parse(sw.match(/const PRECACHE = (\[[^\n]+\]);/)[1]);
+  assert.ok(assets.some((p) => /maplibre-gl-worker-.*\.js$/.test(p)));
+  assert.ok(assets.some((p) => p.endsWith(".css")));
+  for (const path of assets) {
+    assert.ok(path.startsWith("/lecorbusier/assets/"));
+    assert.ok(
+      (await stat(new URL(path.replace("/lecorbusier/", ""), root))).size > 0,
+    );
+  }
+  const manifest = JSON.parse(
+    await readFile(new URL("manifest.webmanifest", root), "utf8"),
+  );
+  for (const shortcut of manifest.shortcuts)
+    assert.ok(shortcut.url.startsWith(manifest.scope));
+  assert.equal(manifest.screenshots.length, 2);
+});

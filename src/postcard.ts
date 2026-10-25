@@ -1,5 +1,5 @@
 import type { Place, Proposal } from "./types";
-export async function sharePostcard(
+export async function preparePostcard(
   p: Proposal,
   place: Place,
   caption: string,
@@ -16,8 +16,7 @@ export async function sharePostcard(
     ? 1920
     : Math.round((image.height * 1080) / image.width) + 230;
   const ctx = c.getContext("2d");
-  if (!ctx)
-    throw new Error("Le téléchargement est indisponible sur ce navigateur.");
+  if (!ctx) throw new Error("Image indisponible. Réessaie.");
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.fillStyle = "#111111";
@@ -58,14 +57,16 @@ export async function sharePostcard(
   ctx.fillStyle = "#555555";
   ctx.fillText(`${p.author} · ${place.name}`, 58, c.height - 85);
   ctx.font = "21px system-ui, sans-serif";
-  ctx.fillText("keff.uk/lecorbusier · Architecture fictive", 58, c.height - 43);
+  ctx.fillText("keff.uk/lecorbusier", 58, c.height - 43);
   ctx.font = "16px system-ui, sans-serif";
   ctx.fillText(
     `Photo : ${place.author} · ${place.license} · image modifiée`,
     58,
-    c.height - 15,
+    c.height - 25,
     964,
   );
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.fillText(place.sourceUrl.replace("https://", ""), 58, c.height - 7, 964);
   const blob = await new Promise<Blob | null>((resolve) =>
     c.toBlob(resolve, "image/png"),
   );
@@ -76,29 +77,5 @@ export async function sharePostcard(
     `${p.title.replace(/[^a-z0-9àâéèêëîïôùûüç-]/gi, "-").slice(0, 70)}.png`,
     { type: "image/png" },
   );
-  if (meme && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: p.title, text: credit });
-      return;
-    } catch (e) {
-      if ((e as Error).name === "AbortError") return;
-    }
-  }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-  // The associated text file preserves source attribution when downloading an adaptation.
-  const attribution = URL.createObjectURL(
-    new Blob([`${p.title}\n${credit}\n${place.licenseUrl || ""}\n`], {
-      type: "text/plain;charset=utf-8",
-    }),
-  );
-  const credits = document.createElement("a");
-  credits.href = attribution;
-  credits.download = file.name.replace(".png", "-credits.txt");
-  credits.click();
-  setTimeout(() => URL.revokeObjectURL(attribution), 10000);
+  return { file, credit };
 }

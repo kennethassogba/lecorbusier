@@ -12,7 +12,7 @@ Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y ima
 - Génération persistante dans Cloudflare Workflows, reprise dans « Mes plans ».
 - Carte partagée, notifications WebSocket, votes réversibles et palmarès.
 - Liens publics avec métadonnées sociales, comparaison avant/après et export PNG/story.
-- PWA installable. L'interface et les photos consultées fonctionnent hors ligne ; génération, carte en ligne et publication nécessitent le réseau.
+- PWA installable : mode autonome, raccourcis système, badge des créations prêtes sur les plateformes compatibles, partage système des liens et images. L'interface, les photos consultées, les dix dernières images publiques et les tuiles récemment visitées restent disponibles hors ligne ; génération, nouveaux quartiers et publication nécessitent le réseau.
 
 Aucun quota applicatif de créations. Les capacités et limites des fournisseurs continuent de s'appliquer. Un identifiant anonyme HttpOnly retrouve les plans et votes dans le même navigateur. Effacer les cookies fait perdre cet accès. Un vote par création et navigateur, sans garantie d'unicité humaine.
 
@@ -59,6 +59,14 @@ Le canal WebSocket est un relais de notifications uniquement. Les données durab
 
 Le code est sous [licence MIT](LICENSE). Les photographies gardent leurs licences propres, notamment CC BY et CC BY-SA ; elles ne sont pas couvertes par la licence du code. Voir [le catalogue et les crédits](data/places.json) et [les notes de cadrage](data/README.md). Les images modifiées doivent conserver l'attribution et les conditions applicables de leur photographie source. L'export fournit les crédits avec l'image.
 
-La carte utilise [OpenStreetMap](https://www.openstreetmap.org/copyright), via Leaflet. Les tuiles sont chargées uniquement pour la vue affichée, sans téléchargement de carte hors ligne. Le service de tuiles communautaire est fourni sans garantie de disponibilité ; pour une audience importante, utiliser un fournisseur adapté.
+La carte vectorielle utilise MapLibre GL JS et les tuiles OpenFreeMap, à partir des données OpenStreetMap/OpenMapTiles. Le style Positron est adapté dans `public/paris-map.json` : palette neutre et bleue, noms français, volumes des bâtiments. Les constructions de plus de 80 mètres restent en plan pour éviter de transformer les monuments ouverts comme la tour Eiffel en blocs opaques. Les tuiles visitées sont mises en cache au fil de la navigation, sans préchargement géographique (80 réponses de 512 Kio au maximum, moins de 40 Mio).
 
 Documentation technique : [OpenAI Images](https://developers.openai.com/api/docs/guides/image-generation), [Cloudflare Workflows](https://developers.cloudflare.com/workflows/build/workers-api/), [Cloudflare CLI](https://developers.cloudflare.com/cf/projects/).
+
+## Interface mobile
+
+La carte reste montée pendant le parcours. Les panneaux se réduisent depuis leur poignée (glissement ou bouton), les formulaires tiennent au-dessus du clavier, et les déplacements respectent la préférence de mouvement réduit. Le bouton retour du navigateur restaure les panneaux et ferme les dialogues.
+
+Le partage prépare le PNG avant le geste pour conserver l'activation requise par Web Share. Sur les navigateurs sans partage natif, la feuille propose le lien, WhatsApp, X et un enregistrement explicite. Les exports gardent le crédit et la source photographique dans l'image. L'installation iOS passe par le menu de partage du navigateur. Les fonctions système dépendent de la plateforme ; aucun envoi de notification push en arrière-plan n'est promis.
+
+`npm run build` génère un service worker versionné d'après les fichiers émis. Le cache initial comprend le moteur de carte et son worker ; les API et images privées restent exclues. Dix images publiques au maximum sont conservées hors ligne (2 Mio maximum par image).

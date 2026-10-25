@@ -2,7 +2,7 @@
   "id": "/lecorbusier/",
   "name": "Le Corbusier",
   "short_name": "Le Corbusier",
-  "description": "Transforme Paris en data centers.",
+  "description": "Construire et partager des data centers dans Paris.",
   "lang": "fr",
   "start_url": "/lecorbusier/",
   "scope": "/lecorbusier/",
@@ -28,6 +28,47 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "display_override": ["standalone"],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "shortcuts": [
+    {
+      "name": "Construire",
+      "url": "/lecorbusier/?build=1",
+      "icons": [
+        {
+          "src": "/lecorbusier/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Mes créations",
+      "url": "/lecorbusier/?view=mine"
+    },
+    {
+      "name": "Top",
+      "url": "/lecorbusier/?view=top"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/lecorbusier/install-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Carte de Paris"
+    },
+    {
+      "src": "/lecorbusier/install-desktop.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Carte de Paris"
     }
   ]
 }

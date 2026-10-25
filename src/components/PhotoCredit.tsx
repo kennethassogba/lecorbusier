@@ -8,8 +8,8 @@ export function PhotoCredit({
 }) {
   return (
     <details className="photo-credit">
-      <summary>Crédit photo{adapted ? " et image modifiée" : ""}</summary>
-      <p>
+      <summary>Crédits</summary>
+      <div>
         <a href={place.sourceUrl} target="_blank" rel="noreferrer">
           {place.author}
         </a>{" "}
@@ -21,10 +21,8 @@ export function PhotoCredit({
         >
           {place.license}
         </a>
-        {adapted
-          ? " · Transformation générée avec OpenAI. Les conditions de la photographie source restent applicables."
-          : ""}
-      </p>
+        {adapted ? " · Image modifiée" : ""}
+      </div>
     </details>
   );
 }
