@@ -3,110 +3,110 @@
     "id": "0421373e-4e62-4fae-ac41-33accf6d6cdb",
     "placeId": "louvre",
     "title": "Le Palais des GPU",
-    "demoVotes": 98274,
+    "demoVotes": 93,
     "imageRevision": 2
   },
   {
     "id": "24f1cef0-61f0-4807-aef1-225dd89163bb",
     "placeId": "notre-dame",
     "title": "Notre-Dame des données",
-    "demoVotes": 91763
+    "demoVotes": 9
   },
   {
     "id": "867245b4-85c7-4d0f-bc07-4405bea8d869",
     "placeId": "opera-garnier",
     "title": "Le Ballet des serveurs",
-    "demoVotes": 84281,
+    "demoVotes": 80,
     "imageRevision": 2
   },
   {
     "id": "96ca12f9-c207-4e4c-9564-3b70bd9c28b0",
     "placeId": "trocadero",
     "title": "Le Béton connecté",
-    "demoVotes": 78246
+    "demoVotes": 130
   },
   {
     "id": "5d3c7e54-a467-482b-9d39-246b4406772a",
     "placeId": "pantheon",
     "title": "Le Temple du ping",
-    "demoVotes": 72104,
+    "demoVotes": 81,
     "imageRevision": 2
   },
   {
     "id": "bbc0c3b2-52f7-4f8b-ac6f-69af7e4d8158",
     "placeId": "musee-orsay",
     "title": "La Machine d'Orsay",
-    "demoVotes": 67988,
+    "demoVotes": 116,
     "imageRevision": 2
   },
   {
     "id": "6c3bade3-15ea-49c1-a471-bde68c2a221e",
     "placeId": "sacre-coeur",
     "title": "Les Orgues du cloud",
-    "demoVotes": 61874
+    "demoVotes": 68
   },
   {
     "id": "88c7a137-4136-497b-819f-3519d72c311b",
     "placeId": "arc-de-triomphe",
     "title": "Le Rond-point des racks",
-    "demoVotes": 58729
+    "demoVotes": 46
   },
   {
     "id": "f9611dfc-e8fe-4ee9-b118-c3fe0307d54c",
     "placeId": "bastille",
     "title": "Le Génie du processeur",
-    "demoVotes": 54642
+    "demoVotes": 79
   },
   {
     "id": "70030cef-ec2b-43b0-a2ec-f6b34a3a71c3",
     "placeId": "pompidou",
     "title": "Le Centre de calcul",
-    "demoVotes": 50536
+    "demoVotes": 63
   },
   {
     "id": "fa893351-fed8-4ed5-b677-fb70b8f5a56f",
     "placeId": "grand-palais",
     "title": "La Grande Verrière",
-    "demoVotes": 47408
+    "demoVotes": 128
   },
   {
     "id": "5d76aa58-efcc-4549-b6b1-bc96cd346c42",
     "placeId": "invalides",
     "title": "Les Invalides du réseau",
-    "demoVotes": 43293,
+    "demoVotes": 123,
     "imageRevision": 2
   },
   {
     "id": "4f5a6448-2b77-4cb0-966a-e96391b1c143",
     "placeId": "bibliotheque-france",
     "title": "La Bibliothèque des prompts",
-    "demoVotes": 39176,
+    "demoVotes": 125,
     "imageRevision": 2
   },
   {
     "id": "84f1ae7d-e30b-4191-a70c-38c6128ea0fe",
     "placeId": "palais-royal",
     "title": "Les Colonnes du calcul",
-    "demoVotes": 35084,
+    "demoVotes": 149,
     "imageRevision": 2
   },
   {
     "id": "b73277c3-102a-440d-b90d-cc50d6fd743d",
     "placeId": "concorde",
     "title": "La Concorde des machines",
-    "demoVotes": 31963,
+    "demoVotes": 43,
     "imageRevision": 2
   },
   {
     "id": "e374cd5c-7337-4c26-be09-6eda04f65d02",
     "placeId": "conciergerie",
     "title": "La Conciergerie du cloud",
-    "demoVotes": 27846
+    "demoVotes": 109
   },
   {
     "id": "29579fc1-cc3f-40fd-a44d-b34b03a501ca",
     "placeId": "point-48.86914-2.33130",
     "title": "Le Cloud de la Paix",
-    "demoVotes": 24724
+    "demoVotes": 65
   }
 ]
