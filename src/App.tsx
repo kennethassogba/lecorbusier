@@ -246,19 +246,19 @@ export default function App() {
   useEffect(() => {
     if (initialLink.current) return;
     initialLink.current = true;
-    if (!history.state?.lc)
-      history.replaceState(
-        {
-          lc: {
-            panel: "none",
-            selected: null,
-            filter: "all",
-            building: false,
-            depth: 0,
-          },
+    // A reload reconstructs the screen from the URL, not an older panel snapshot.
+    history.replaceState(
+      {
+        lc: {
+          panel: "none",
+          selected: null,
+          filter: "all",
+          building: false,
+          depth: 0,
         },
-        "",
-      );
+      },
+      "",
+    );
     const id = location.pathname.match(/\/p\/([a-f0-9-]{36})/)?.[1];
     if (id)
       history.replaceState(
