@@ -30,10 +30,15 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["games", "entertainment"],
-  "display_override": ["standalone"],
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "display_override": [
+    "standalone"
+  ],
   "launch_handler": {
-    "client_mode": "focus-existing"
+    "client_mode": "navigate-existing"
   },
   "shortcuts": [
     {
