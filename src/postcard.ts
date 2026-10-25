@@ -58,7 +58,7 @@ export async function preparePostcard(
   ctx.fillStyle = "#555555";
   ctx.fillText(`${p.author} · ${t(place.name)}`, 58, c.height - 85, 964);
   ctx.font = "21px system-ui, sans-serif";
-  ctx.fillText("keff.uk/lecorbusier", 58, c.height - 43);
+  ctx.fillText("keff.uk/corbs", 58, c.height - 43);
   ctx.font = "16px system-ui, sans-serif";
   ctx.fillText(
     `${t("Photo :")} ${place.author} · ${place.license} · ${t("image modifiée")}`,

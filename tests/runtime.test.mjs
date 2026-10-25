@@ -62,7 +62,7 @@ test(
         owner = "019a1b00-1a00-4000-8000-123456789aaa",
         other = "019a1b00-1a00-4000-8000-123456789bbb";
       const request = (path, visitor = owner, body) =>
-        mf.dispatchFetch("https://example.test/lecorbusier" + path, {
+        mf.dispatchFetch("https://example.test/corbs" + path, {
           headers: {
             Cookie: "lc_visitor=" + visitor,
             ...(body !== undefined
@@ -101,12 +101,22 @@ test(
       const own = await (await request("/api/proposals/" + id)).json();
       assert.equal(own.title, "<GPU>");
       assert.ok(!("owner" in own));
+      const bridge = await mf.dispatchFetch("https://example.test/lecorbusier/api/migrate-session", {
+        headers: { Cookie: "lc_visitor=" + owner },
+      });
+      assert.equal(bridge.status, 204);
+      assert.match(bridge.headers.get("Set-Cookie"), /Path=\/corbs\/;/);
+      assert.match(bridge.headers.get("Set-Cookie"), /HttpOnly; SameSite=Lax; Secure/);
+      const movedMine = await mf.dispatchFetch("https://example.test/corbs/api/mine", {
+        headers: { Cookie: bridge.headers.get("Set-Cookie").split(";")[0] },
+      });
+      assert.equal((await movedMine.json()).proposals[0].id, id);
       assert.equal(
         (await request("/api/proposals/" + id + "/publish", other, {})).status,
         404,
       );
       const socketResponse = await mf.dispatchFetch(
-        "https://example.test/lecorbusier/api/live",
+        "https://example.test/corbs/api/live",
         { headers: { Upgrade: "websocket", Origin: "https://example.test" } },
       );
       assert.equal(socketResponse.status, 101);
@@ -167,7 +177,7 @@ test(
       assert.match(html, /og:image/);
       assert.doesNotMatch(html, /<title><GPU>/);
       const cross = await mf.dispatchFetch(
-        "https://example.test/lecorbusier/api/proposals/" + id + "/vote",
+        "https://example.test/corbs/api/proposals/" + id + "/vote",
         {
           method: "POST",
           headers: {
@@ -305,7 +315,7 @@ test(
       assert.equal(
         (
           await mf.dispatchFetch(
-            "https://example.test/lecorbusier/api/generate",
+            "https://example.test/corbs/api/generate",
             init,
           )
         ).status,
@@ -314,7 +324,7 @@ test(
       assert.equal(
         (
           await mf.dispatchFetch(
-            "https://example.test/lecorbusier/api/generate",
+            "https://example.test/corbs/api/generate",
             init,
           )
         ).status,
@@ -339,7 +349,7 @@ test(
       assert.equal(JSON.parse(row.place_json).lat, 48.86914);
       assert.ok(
         JSON.parse(row.place_json).image.startsWith(
-          "/lecorbusier/api/reference/",
+          "/corbs/api/reference/",
         ),
       );
       assert.equal(row.brief, "Un data center bas, la gare visible.");
@@ -412,7 +422,7 @@ test(
       }),
     );
     const suggest = (body) =>
-      mf.dispatchFetch("https://example.test/lecorbusier/api/suggest", {
+      mf.dispatchFetch("https://example.test/corbs/api/suggest", {
         method: "POST",
         headers: {
           Origin: "https://example.test",
@@ -467,3 +477,55 @@ test(
     }
   },
 );
+test("Corbs migration preserves deep links, request methods, installed manifests and old sessions", { skip: !built }, async () => {
+  const mf = new Miniflare(convertV4MiniflareOptions({
+    modules: true,
+    scriptPath: bundle,
+    compatibilityDate: "2026-10-25",
+    serviceBindings: {
+      ASSETS: (request) => new Response(new URL(request.url).pathname),
+    },
+  }));
+  try {
+    const origin = "https://example.test";
+    const owner = "019a1b00-1a00-4000-8000-123456789aaa";
+    for (const [from, to] of [
+      ["/lecorbusier", "/corbs/"],
+      ["/lecorbusier/?build=1&lang=en", "/corbs/?build=1&lang=en"],
+      ["/lecorbusier/p/abc?shared=1", "/corbs/p/abc?shared=1"],
+      ["/lecorbusier/media/abc.jpg?v=2", "/corbs/media/abc.jpg?v=2"],
+      ["/corbs?view=mine", "/corbs/?view=mine"],
+    ]) {
+      const response = await mf.dispatchFetch(origin + from, { redirect: "manual", headers: { Cookie: "lc_visitor=" + owner } });
+      assert.equal(response.status, 308);
+      assert.equal(response.headers.get("Location"), origin + to);
+      if (from.startsWith("/lecorbusier")) {
+        assert.match(response.headers.get("Set-Cookie"), new RegExp(owner));
+        assert.match(response.headers.get("Set-Cookie"), /Path=\/corbs\/;/);
+        assert.equal(response.headers.get("Cache-Control"), "no-store");
+      }
+    }
+    const post = await mf.dispatchFetch(origin + "/lecorbusier/api/generate", {
+      method: "POST", redirect: "manual", body: "{}",
+      headers: { Origin: origin, "Content-Type": "application/json" },
+    });
+    assert.equal(post.status, 308); // 308 retains the POST method and body.
+    assert.equal(post.headers.get("Location"), origin + "/corbs/api/generate");
+    const session = await mf.dispatchFetch(origin + "/lecorbusier/api/migrate-session");
+    assert.equal(session.status, 204);
+    assert.equal(session.headers.get("Set-Cookie"), null); // Never replace a new visitor when no old identity exists.
+    const sw = await mf.dispatchFetch(origin + "/lecorbusier/sw.js");
+    assert.equal(sw.status, 200);
+    assert.equal(await sw.text(), "/legacy-sw.js");
+    assert.equal(sw.headers.get("Service-Worker-Allowed"), "/lecorbusier/");
+    assert.equal(sw.headers.get("Cache-Control"), "no-cache");
+    for (const name of ["manifest.webmanifest", "manifest-en.webmanifest"]) {
+      const manifest = await mf.dispatchFetch(origin + "/lecorbusier/" + name);
+      assert.equal(manifest.status, 200);
+      assert.equal(await manifest.text(), "/" + name);
+    }
+    assert.equal((await mf.dispatchFetch(origin + "/lecorbusier-other")).status, 404);
+  } finally {
+    await mf.dispose();
+  }
+});

@@ -2,7 +2,7 @@
 // Usage: node scripts/examples.mjs generate | publish
 // Session data stays in ignored output/ and is never committed.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-const root = "https://keff.uk/lecorbusier";
+const root = "https://keff.uk/corbs";
 const examples = JSON.parse(
   await readFile(process.env.EXAMPLES_MANIFEST || "data/examples.json", "utf8"),
 );

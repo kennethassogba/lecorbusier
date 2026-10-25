@@ -1,7 +1,7 @@
 const CACHE = "lecorbusier-v3-__BUILD__";
 const MAP_CACHE = "lecorbusier-map-v1";
 const PUBLIC_CACHE = "lecorbusier-public-v1";
-const BASE = "/lecorbusier/";
+const BASE = "/corbs/";
 const PRECACHE = [];
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -1,6 +1,6 @@
 # Le Corbusier
 
-[Ouvrir l'app](https://keff.uk/lecorbusier/)
+[Ouvrir l'app](https://keff.uk/corbs/)
 
 Un jeu satirique d'architecture collective. Choisir un vrai lieu de Paris, y imaginer un data center, signer les plans et publier sur la carte commune. Sans compte.
 
@@ -36,7 +36,7 @@ npx cf d1 migrations apply 0458a2ad-9007-4a48-8bc6-f55f15e33928 --local --persis
 npm run dev
 ```
 
-Ouvrir `http://127.0.0.1:5196/lecorbusier/`. Pour un autre compte Cloudflare, remplacer le compte, la zone et la base dans `cloudflare.config.ts`.
+Ouvrir `http://127.0.0.1:5196/corbs/`. Pour un autre compte Cloudflare, remplacer le compte, la zone et la base dans `cloudflare.config.ts`.
 
 ```sh
 npm run build
@@ -55,7 +55,7 @@ npm test
 npx cf deploy --prebuilt --secrets-file .dev.vars
 ```
 
-La route `keff.uk/lecorbusier*` appartient au Worker `lecorbusier-keff`. Le site principal reste servi par son Worker existant. `scripts/cf-auth.mjs` est un utilitaire local qui peut reprendre la session Wrangler du propriétaire sans écrire ni afficher son jeton ; les autres contributeurs utilisent `cf auth login`.
+Les routes `keff.uk/corbs*` et `keff.uk/lecorbusier*` appartiennent au Worker `lecorbusier-keff`. L’ancienne adresse redirige vers `/corbs/`, en conservant les liens de création et les paramètres. L’identité du manifeste PWA reste stable pour les installations existantes. Le site principal reste servi par son Worker existant. `scripts/cf-auth.mjs` est un utilitaire local qui peut reprendre la session Wrangler du propriétaire sans écrire ni afficher son jeton ; les autres contributeurs utilisent `cf auth login`.
 
 Les données, votes et images JPEG découpées sont conservés dans D1. Le stockage R2 n'est pas activé sur le compte de déploiement ; ce lancement utilise donc D1 sans dépendre d'une activation supplémentaire. Pour une forte volumétrie d'images, déplacer les fichiers vers un stockage objet. Les URL publiques des créations restent stables.
 

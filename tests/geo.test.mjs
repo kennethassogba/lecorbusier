@@ -31,7 +31,7 @@ test("reference location is immutable, source URLs are server-owned, WMS axes an
   });
   assert.equal(place.lat, 48.86914);
   assert.equal(place.lng, 2.3313);
-  assert.ok(place.image.startsWith("/lecorbusier/api/reference/point-"));
+  assert.ok(place.image.startsWith("/corbs/api/reference/point-"));
   assert.equal(placeFromId(place.id).lat, place.lat);
   assert.throws(() => placeFromId("https://evil.test"));
   const url = new URL(aerialUrl(place));

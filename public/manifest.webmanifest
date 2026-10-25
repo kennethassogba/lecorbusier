@@ -4,27 +4,27 @@
   "short_name": "Le Corbusier",
   "description": "Construire et partager des data centers dans Paris.",
   "lang": "fr",
-  "start_url": "/lecorbusier/",
-  "scope": "/lecorbusier/",
+  "start_url": "/corbs/",
+  "scope": "/corbs/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/lecorbusier/icon-192.png",
+      "src": "/corbs/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/lecorbusier/icon-512.png",
+      "src": "/corbs/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/lecorbusier/icon-maskable.png",
+      "src": "/corbs/icon-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -38,33 +38,33 @@
   "shortcuts": [
     {
       "name": "Construire",
-      "url": "/lecorbusier/?build=1",
+      "url": "/corbs/?build=1",
       "icons": [
         {
-          "src": "/lecorbusier/icon-192.png",
+          "src": "/corbs/icon-192.png",
           "sizes": "192x192"
         }
       ]
     },
     {
       "name": "Mes créations",
-      "url": "/lecorbusier/?view=mine"
+      "url": "/corbs/?view=mine"
     },
     {
       "name": "Top",
-      "url": "/lecorbusier/?view=top"
+      "url": "/corbs/?view=top"
     }
   ],
   "screenshots": [
     {
-      "src": "/lecorbusier/install-mobile.png",
+      "src": "/corbs/install-mobile.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Carte de Paris"
     },
     {
-      "src": "/lecorbusier/install-desktop.png",
+      "src": "/corbs/install-desktop.png",
       "sizes": "1440x900",
       "type": "image/png",
       "form_factor": "wide",

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 const root = ".cloudflare/output/v0/workers/default/assets";
 const assets = (await readdir(root + "/assets"))
   .filter((f) => /\.(js|css)$/.test(f))
-  .map((f) => "/lecorbusier/assets/" + f);
+  .map((f) => "/corbs/assets/" + f);
 const metadata = await Promise.all(
   ["index.html", "manifest.webmanifest", "manifest-en.webmanifest", "paris-map.json", "sw.js"].map((f) =>
     readFile(root + "/" + f, "utf8"),

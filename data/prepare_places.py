@@ -55,7 +55,7 @@ def download(p):
  raw=urllib.request.urlopen(urllib.request.Request(url,headers=UA),timeout=60).read()
  from io import BytesIO
  im=Image.open(BytesIO(raw)).convert('RGB');im.thumbnail((1600,1600));im.save(ROOT/'public/places'/f'{id}.jpg',quality=88,optimize=True)
- result={'id':id,'name':name,'arrondissement':arr,'lat':lat,'lng':lng,'image':f'/lecorbusier/places/{id}.jpg','sourceUrl':m['descriptionurl'],'author':clean(ext.get('Artist',{}).get('value','Wikimedia Commons')),'license':ext.get('LicenseShortName',{}).get('value',''),'licenseUrl':ext.get('LicenseUrl',{}).get('value',''),'context':context,'capturedAt':clean(ext.get('DateTimeOriginal',{}).get('value',''))}
+ result={'id':id,'name':name,'arrondissement':arr,'lat':lat,'lng':lng,'image':f'/corbs/places/{id}.jpg','sourceUrl':m['descriptionurl'],'author':clean(ext.get('Artist',{}).get('value','Wikimedia Commons')),'license':ext.get('LicenseShortName',{}).get('value',''),'licenseUrl':ext.get('LicenseUrl',{}).get('value',''),'context':context,'capturedAt':clean(ext.get('DateTimeOriginal',{}).get('value',''))}
  print(id,im.size,result['license'],result['sourceUrl'],flush=True)
  return result
 with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:

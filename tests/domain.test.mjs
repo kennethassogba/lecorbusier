@@ -31,7 +31,7 @@ test("20 real places have unique valid coordinates, local photographs and source
       (
         await stat(
           new URL(
-            "../public" + place.image.replace("/lecorbusier", ""),
+            "../public" + place.image.replace("/corbs", ""),
             import.meta.url,
           ),
         )
@@ -85,15 +85,21 @@ test("PWA is scoped to the supplied subpath and has real install icons", async (
       "utf8",
     ),
   );
-  assert.equal(manifest.scope, "/lecorbusier/");
+  assert.equal(manifest.scope, "/corbs/");
+  // Keep installed-app identity while moving its launch URL and scope.
+  assert.equal(manifest.id, "/lecorbusier/");
   assert.equal(manifest.start_url, manifest.scope);
+  const english = JSON.parse(await readFile(new URL("../public/manifest-en.webmanifest", import.meta.url), "utf8"));
+  assert.equal(english.id, manifest.id);
+  assert.equal(english.start_url, manifest.start_url);
+  assert.equal(english.scope, manifest.scope);
   assert.equal(manifest.display, "standalone");
   for (const icon of manifest.icons)
     assert.ok(
       (
         await stat(
           new URL(
-            "../public" + icon.src.replace("/lecorbusier", ""),
+            "../public" + icon.src.replace("/corbs", ""),
             import.meta.url,
           ),
         )
@@ -112,9 +118,9 @@ test("built PWA precaches its map worker and exposes scoped system shortcuts", a
   assert.ok(assets.some((p) => /maplibre-gl-worker-.*\.js$/.test(p)));
   assert.ok(assets.some((p) => p.endsWith(".css")));
   for (const path of assets) {
-    assert.ok(path.startsWith("/lecorbusier/assets/"));
+    assert.ok(path.startsWith("/corbs/assets/"));
     assert.ok(
-      (await stat(new URL(path.replace("/lecorbusier/", ""), root))).size > 0,
+      (await stat(new URL(path.replace("/corbs/", ""), root))).size > 0,
     );
   }
   const manifest = JSON.parse(

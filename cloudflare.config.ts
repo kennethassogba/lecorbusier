@@ -34,6 +34,7 @@ export default defineConfig({
       GenerateProposal: exports.workflow({ name: "lecorbusier-generate" }),
     },
     triggers: [
+      triggers.fetch({ pattern: "keff.uk/corbs*", zone: "keff.uk" }),
       triggers.fetch({ pattern: "keff.uk/lecorbusier*", zone: "keff.uk" }),
     ],
     workersDev: true,

@@ -1,6 +1,6 @@
 import boundary from "../data/paris-boundary.json" with { type: "json" };
 import { clean } from "./domain.js";
-const BASE = "/lecorbusier";
+const BASE = "/corbs";
 function inRing(lng, lat, ring) {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {

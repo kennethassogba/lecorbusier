@@ -27,7 +27,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
   window.addEventListener("load", () => {
     void navigator.serviceWorker
-      .register("/lecorbusier/sw.js", { scope: "/lecorbusier/" })
+      .register("/corbs/sw.js", { scope: "/corbs/" })
       .catch(() => {});
   });
 }

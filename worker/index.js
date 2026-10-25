@@ -15,7 +15,8 @@ import {
   searchPlaces,
   reversePlace,
 } from "./geo.js";
-const BASE = "/lecorbusier";
+const BASE = "/corbs";
+const LEGACY = "/lecorbusier";
 const assetRequest = (path, origin = "https://assets.local") =>
   new Request(origin + (import.meta.env.DEV ? BASE : "") + path);
 const PUBLIC =
@@ -24,9 +25,13 @@ const json = (data, status = 200) =>
   Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 const live = (env) => env.LIVE.getByName("paris-map");
 function rowPlace(row) {
-  return row.place_json
+  const place = row.place_json
     ? JSON.parse(row.place_json)
     : places.find((p) => p.id === row.place_id);
+  return place && {
+    ...place,
+    image: place.image.replace(/^\/lecorbusier\//, BASE + "/"),
+  };
 }
 function inputPlace(input) {
   if (!input || typeof input !== "object")
@@ -44,7 +49,7 @@ function shape(row) {
   const { place_json, ...rest } = row;
   return {
     ...rest,
-    ...(place_json ? { place: JSON.parse(place_json) } : {}),
+    ...(place_json ? { place: rowPlace(row) } : {}),
     image:
       row.image_key || row.status === "ready" || row.published_at
         ? `${BASE}/media/${row.id}.jpg?v=${row.image_revision || 1}`
@@ -581,8 +586,42 @@ export default {
     if (!stored)
       cookie = `lc_visitor=${visitor}; Path=${BASE}/; Max-Age=31536000; HttpOnly; SameSite=Lax${url.protocol === "https:" ? "; Secure" : ""}`;
     try {
-      if (url.pathname === BASE)
-        return Response.redirect(url.origin + BASE + "/", 308);
+      if (url.pathname === LEGACY + "/api/migrate-session") {
+        // The browser sends its old path-scoped cookie only at the old address.
+        // Copy it before the new app requests private drafts or submits a vote.
+        return headers(new Response(null, {
+          status: 204,
+          headers: { "Cache-Control": "no-store" },
+        }), stored
+          ? `lc_visitor=${stored}; Path=${BASE}/; Max-Age=31536000; HttpOnly; SameSite=Lax${url.protocol === "https:" ? "; Secure" : ""}`
+          : null);
+      }
+      if (url.pathname === LEGACY + "/sw.js") {
+        const response = await env.ASSETS.fetch(assetRequest("/legacy-sw.js", url.origin));
+        const wrapped = headers(response, null);
+        wrapped.headers.set("Cache-Control", "no-cache");
+        wrapped.headers.set("Service-Worker-Allowed", LEGACY + "/");
+        return wrapped;
+      }
+      if (url.pathname === LEGACY || url.pathname.startsWith(LEGACY + "/")) {
+        url.pathname = BASE + (url.pathname.slice(LEGACY.length) || "/");
+        // Old installations must be able to refresh their manifest. Keep open
+        // clients connected until their replacement service worker takes over.
+        if (/^\/corbs\/(manifest(?:-en)?\.webmanifest|api\/live)$/.test(url.pathname)) {
+          request = new Request(url, request);
+        } else {
+          return headers(new Response(null, {
+            status: 308,
+            headers: { Location: url.href, "Cache-Control": "no-store" },
+          }), stored
+            ? `lc_visitor=${stored}; Path=${BASE}/; Max-Age=31536000; HttpOnly; SameSite=Lax${url.protocol === "https:" ? "; Secure" : ""}`
+            : null);
+        }
+      }
+      if (url.pathname === BASE) {
+        url.pathname += "/";
+        return Response.redirect(url.href, 308);
+      }
       if (!url.pathname.startsWith(BASE + "/"))
         return new Response("Not found", { status: 404 });
       if (url.pathname.startsWith(BASE + "/api/")) {
@@ -610,7 +649,7 @@ export default {
         return headers(await api(request, env, url, visitor), cookie);
       }
       const media = url.pathname.match(
-        /^\/lecorbusier\/media\/([a-f0-9-]{36})\.jpg$/i,
+        /^\/corbs\/media\/([a-f0-9-]{36})\.jpg$/i,
       );
       if (media) {
         const row = await env.DB.prepare(
