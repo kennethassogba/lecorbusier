@@ -42,8 +42,18 @@ export function ParisMap({
     L.control.zoom({ position: "bottomright" }).addTo(m);
     map.current = m;
     layer.current = L.layerGroup().addTo(m);
-    const observer = new ResizeObserver(() => m.invalidateSize());
+    const sheet =
+      container.current.parentElement?.querySelector(".location-sheet");
+    const observer = new ResizeObserver(() => {
+      m.invalidateSize();
+      if (sheet)
+        container.current?.style.setProperty(
+          "--sheet-height",
+          `${sheet.getBoundingClientRect().height}px`,
+        );
+    });
     observer.observe(container.current);
+    if (sheet) observer.observe(sheet);
     return () => {
       observer.disconnect();
       m.stop();

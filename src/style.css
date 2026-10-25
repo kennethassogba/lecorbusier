@@ -267,7 +267,7 @@ details p {
   background: rgba(255, 255, 255, 0.9) !important;
 }
 .leaflet-bottom.leaflet-right {
-  bottom: 260px;
+  bottom: calc(var(--sheet-height, 260px) + 12px);
 }
 .leaflet-control-zoom {
   border: 1px solid var(--line) !important;
